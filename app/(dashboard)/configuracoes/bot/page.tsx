@@ -4,6 +4,7 @@ import { requireActiveAccount } from "@/lib/account-guard";
 import { db } from "@/lib/db";
 import { saveBotConfig } from "@/app/(dashboard)/actions";
 import { PageHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export default async function BotConfigPage() {
   const user = await requireActiveAccount();
@@ -51,9 +52,7 @@ export default async function BotConfigPage() {
           momento, pausando a resposta automática (Central de Mensagens).
         </p>
 
-        <button className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600">
-          Salvar configuração
-        </button>
+        <SubmitButton>Salvar configuração</SubmitButton>
       </form>
     </div>
   );

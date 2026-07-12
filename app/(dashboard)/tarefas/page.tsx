@@ -4,6 +4,7 @@ import { getTasks } from "@/lib/data";
 import { createTask, toggleTask } from "@/app/(dashboard)/actions";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { formatDate } from "@/lib/format";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export default async function TarefasPage() {
   const user = await requireActiveAccount();
@@ -18,7 +19,7 @@ export default async function TarefasPage() {
       <form action={createTask} className="gm-card mb-6 flex flex-wrap gap-3 p-4">
         <input name="title" required placeholder="Nova tarefa..." className="min-w-[200px] flex-1 rounded-lg border border-gm-200 px-3 py-2 text-sm" />
         <input name="due_at" type="date" className="rounded-lg border border-gm-200 px-3 py-2 text-sm" />
-        <button className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600">Adicionar</button>
+        <SubmitButton pendingText="Adicionando..." className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gm-600 disabled:opacity-60">Adicionar</SubmitButton>
       </form>
 
       {tasks.length === 0 ? (

@@ -4,6 +4,7 @@ import { requireActiveAccount } from "@/lib/account-guard";
 import { updateProfile } from "@/app/(dashboard)/actions";
 import { PageHeader } from "@/components/ui";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { SubmitButton } from "@/components/SubmitButton";
 
 const SECTIONS = [
   { href: "/configuracoes/plano", icon: "💳", title: "Plano e Cobrança", desc: "Assinatura, faturas e cancelamento" },
@@ -68,7 +69,7 @@ export default async function ConfiguracoesPage() {
                 className="w-full rounded-lg border border-gm-200 px-3 py-2 text-sm"
               />
             </label>
-            <button className="min-h-11 rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600">Salvar alterações</button>
+            <SubmitButton>Salvar alterações</SubmitButton>
           </form>
         </div>
 
