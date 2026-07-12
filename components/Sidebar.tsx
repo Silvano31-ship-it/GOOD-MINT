@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "./Logo";
 import { LogoutButton } from "./LogoutButton";
+import { getInitials } from "@/lib/constants";
 
 const NAV = [
   { href: "/dashboard", label: "Visão Geral", icon: "📊" },
@@ -16,10 +17,18 @@ const NAV = [
   { href: "/planilhas", label: "Planilhas", icon: "📋" },
   { href: "/tarefas", label: "Tarefas", icon: "✅" },
   { href: "/mensagens", label: "Central de Mensagens", icon: "💬" },
+  { href: "/social", label: "Social", icon: "📣" },
+  { href: "/suporte", label: "Suporte", icon: "🆘" },
   { href: "/configuracoes", label: "Configurações", icon: "⚙️" },
 ];
 
-export function Sidebar({ userName }: { userName: string }) {
+export function Sidebar({
+  userName,
+  avatarUrl,
+}: {
+  userName: string;
+  avatarUrl?: string | null;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
@@ -66,8 +75,18 @@ export function Sidebar({ userName }: { userName: string }) {
               </Link>
             ))}
           </nav>
-          <div className="mt-2 border-t border-gm-100 pt-3">
-            <div className="truncate px-3 text-xs text-gm-700/50">{userName}</div>
+          <div className="mt-2 flex items-center gap-2 border-t border-gm-100 px-1 pt-3">
+            <div className="flex h-8 w-8 flex-none items-center justify-center overflow-hidden rounded-full bg-gm-500 text-xs font-semibold text-white">
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                getInitials(userName)
+              )}
+            </div>
+            <div className="truncate text-xs text-gm-700/50">{userName}</div>
+          </div>
+          <div className="pt-1">
             <LogoutButton
               label="↪ Sair"
               className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gm-700 hover:bg-gm-50"

@@ -1,13 +1,16 @@
 // app/(dashboard)/dashboard/page.tsx — Tela 7. Dashboard — Home.
 // Contadores reais (sempre zerado em conta nova) + bola de cristal.
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireActiveAccount } from "@/lib/account-guard";
 import { getCounts } from "@/lib/data";
 import { CrystalSphere } from "@/components/CrystalSphere";
 import { StatCard } from "@/components/ui";
+import { DashboardGreeting } from "@/components/DashboardGreeting";
 
 export default async function DashboardHome() {
   const user = await requireActiveAccount();
+  if (!user.onboarding_done) redirect("/onboarding");
   const counts = await getCounts(user.id);
 
   const isEmpty =
@@ -16,17 +19,9 @@ export default async function DashboardHome() {
     counts.negotiationsOpen === 0 &&
     counts.postSaleActive === 0;
 
-  const firstName = user.full_name.split(" ")[0];
-
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gm-900">Olá, {firstName} 👋</h1>
-        <p className="mt-1 text-sm text-gm-700/60">
-          Este é o resumo do seu negócio. Sua bola de cristal ganha vida conforme
-          você cadastra leads, imóveis e negociações.
-        </p>
-      </div>
+      <DashboardGreeting fullName={user.full_name} initialEmoji={user.dashboard_emoji} />
 
       {/* Esfera + dados flutuantes */}
       <section className="gm-radial relative overflow-hidden rounded-2xl p-6">

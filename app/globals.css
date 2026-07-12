@@ -75,3 +75,22 @@ body {
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
 }
+
+/* Emoji grande do corretor (login/cadastro/dashboard) — balanço + flutuação */
+@keyframes gm-broker-bob {
+  0%, 100% { transform: rotate(-6deg) translateY(0); }
+  50% { transform: rotate(6deg) translateY(-6px); }
+}
+.gm-broker-emoji {
+  display: inline-block;
+  font-size: 56px;
+  line-height: 1;
+  animation: gm-broker-bob 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gm-broker-emoji,
+  .gm-emoji-float {
+    animation: none;
+  }
+}

@@ -7,6 +7,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthShell, Field } from "@/components/AuthShell";
+import { BrokerEmoji } from "@/components/BrokerEmoji";
 
 const PLAN_OPTIONS = [
   { code: "mint_start", name: "MINT Start", price: "R$ 19,90/mês", desc: "30 leads · 15 imóveis" },
@@ -134,6 +135,7 @@ export default function CadastroPage() {
   return (
     <AuthShell
       animated
+      emoji={<BrokerEmoji />}
       title="Comece seu teste grátis"
       subtitle="3 dias grátis, sem cartão de crédito. Escolha um plano e comece agora."
       footer={

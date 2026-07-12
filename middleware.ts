@@ -27,6 +27,7 @@ export async function middleware(req: NextRequest) {
     isPublic(pathname) ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/webhooks") ||
+    pathname.startsWith("/api/cron") ||
     pathname.startsWith("/_next") ||
     pathname.includes(".")
   ) {

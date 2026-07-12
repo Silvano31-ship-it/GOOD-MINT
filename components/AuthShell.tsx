@@ -9,6 +9,7 @@ export function AuthShell({
   children,
   footer,
   animated = false,
+  emoji,
 }: {
   title: string;
   subtitle?: string;
@@ -16,6 +17,8 @@ export function AuthShell({
   footer?: React.ReactNode;
   /** Ativa emojis flutuantes no painel visual (tela de Cadastro). */
   animated?: boolean;
+  /** Emoji grande e animado acima do título (ex.: <BrokerEmoji />). */
+  emoji?: React.ReactNode;
 }) {
   return (
     <div className="grid min-h-screen md:grid-cols-2">
@@ -46,6 +49,7 @@ export function AuthShell({
               <Logo />
             </Link>
           </div>
+          {emoji && <div className="mb-3 text-center">{emoji}</div>}
           <h1 className="text-2xl font-bold text-gm-900">{title}</h1>
           {subtitle && <p className="mt-1 text-sm text-gm-700/60">{subtitle}</p>}
           <div className="mt-6">{children}</div>

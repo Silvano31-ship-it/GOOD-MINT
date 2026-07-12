@@ -80,3 +80,23 @@ export interface Notification {
   read_at: string | null;
   created_at: string;
 }
+
+/** Duas primeiras iniciais do nome, em maiúsculas (avatar de fallback). */
+export function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0][0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? "" : "";
+  return (first + last).toUpperCase();
+}
+
+/** Grupos de emoji sugeridos no seletor do Dashboard. */
+export const EMOJI_GROUPS: Record<string, string[]> = {
+  Corretor: ["🧑‍💼", "🤝", "🏠", "🔑", "📈", "💼"],
+  Motivação: ["🚀", "🔥", "💪", "🏆", "⭐", "🎯"],
+  Leve: ["😄", "☕", "🌱", "🎉", "👋", "✨"],
+};
+
+/** Número oficial de suporte (WhatsApp), usado na tela de Suporte e no rodapé. */
+export const SUPPORT_WHATSAPP = "5592984906392";
+export const SUPPORT_PHONE_DISPLAY = "(92) 98490-6392";

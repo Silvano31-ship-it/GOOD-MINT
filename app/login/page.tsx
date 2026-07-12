@@ -5,6 +5,7 @@ import { Suspense, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthShell, Field } from "@/components/AuthShell";
+import { BrokerEmoji } from "@/components/BrokerEmoji";
 
 function LoginForm() {
   const router = useRouter();
@@ -75,6 +76,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <AuthShell
+      emoji={<BrokerEmoji />}
       title="Entrar"
       subtitle="Acesse sua conta GOOD MINT."
       footer={

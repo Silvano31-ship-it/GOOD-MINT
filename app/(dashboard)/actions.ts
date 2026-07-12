@@ -9,6 +9,9 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { onlyDigits } from "@/lib/format";
 import { cancelSubscription as cancelAsaasSubscription } from "@/lib/asaas";
+import { SUPPORT_WHATSAPP } from "@/lib/constants";
+import { buildOAuthUrl, publishFacebookPost, publishInstagramPost } from "@/lib/meta";
+import { publishTiktokPost } from "@/lib/tiktok";
 
 async function requireUserId(): Promise<string> {
   const session = await getSession();
@@ -310,6 +313,25 @@ export async function requestChannelConnection(channel: string) {
   revalidatePath("/configuracoes/integracoes");
 }
 
+/** Inicia o fluxo OAuth do Meta (Instagram/Facebook). Navegação de página
+ * inteira até o Meta — por isso é o único caso que usa redirect() de verdade
+ * em vez de retornar dados pro client. */
+export async function startMetaOAuth(channel: "instagram" | "facebook") {
+  const userId = await requireUserId();
+  const redirectUri = `${process.env.APP_URL}/api/oauth/meta/callback`;
+  const url = buildOAuthUrl(redirectUri, `${userId}:${channel}`);
+  redirect(url);
+}
+
+export async function toggleAutoReply(channel: string, enabled: boolean) {
+  const userId = await requireUserId();
+  await db.query(
+    `UPDATE channel_integrations SET auto_reply_enabled=$1 WHERE user_id=$2 AND channel=$3`,
+    [enabled, userId, channel]
+  );
+  revalidatePath("/configuracoes/integracoes");
+}
+
 export async function saveBotConfig(formData: FormData) {
   const userId = await requireUserId();
   await db.query(
@@ -354,13 +376,149 @@ export async function cancelMySubscription() {
 export async function updateProfile(formData: FormData) {
   const userId = await requireUserId();
   await db.query(
-    `UPDATE users SET full_name=$1, phone=$2, creci=$3 WHERE id=$4`,
+    `UPDATE users SET full_name=$1, phone=$2, creci=$3, bio=$4, company_name=$5, company_bio=$6 WHERE id=$7`,
     [
       String(formData.get("full_name") ?? "").trim(),
       onlyDigits(String(formData.get("phone") ?? "")) ? String(formData.get("phone")) : "",
       String(formData.get("creci") ?? "") || null,
+      String(formData.get("bio") ?? "").slice(0, 400) || null,
+      String(formData.get("company_name") ?? "").trim() || null,
+      String(formData.get("company_bio") ?? "").slice(0, 400) || null,
       userId,
     ]
   );
   revalidatePath("/configuracoes");
+  revalidatePath("/dashboard");
+}
+
+export async function completeOnboarding() {
+  const userId = await requireUserId();
+  await db.query(`UPDATE users SET onboarding_done=true WHERE id=$1`, [userId]);
+  revalidatePath("/dashboard");
+}
+
+// ---------------------------------------------------------------- SUPORTE
+/** Grava o ticket e devolve o link do WhatsApp — não usa redirect() porque
+ * precisamos abrir o WhatsApp numa aba nova a partir do client, e não navegar
+ * o próprio app para fora. */
+export async function createSupportTicket(formData: FormData): Promise<{ waUrl: string }> {
+  const userId = await requireUserId();
+  const category = String(formData.get("category") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim() || null;
+
+  const { rows } = await db.query<{ full_name: string; email: string }>(
+    `SELECT full_name, email FROM users WHERE id=$1`,
+    [userId]
+  );
+  const user = rows[0];
+
+  await db.query(
+    `INSERT INTO support_tickets (user_id, category, description) VALUES ($1,$2,$3)`,
+    [userId, category, description]
+  );
+
+  const message = [
+    `Olá! Sou ${user.full_name}, usuário do GOOD MINT.`,
+    `Categoria: ${category}`,
+    `Situação: ${description ?? "—"}`,
+    `Meu e-mail de cadastro: ${user.email}`,
+  ].join("\n");
+
+  return { waUrl: `https://wa.me/${SUPPORT_WHATSAPP}?text=${encodeURIComponent(message)}` };
+}
+
+// ---------------------------------------------------------------- SOCIAL
+/** Publica agora (chama a API do canal direto) ou agenda (grava para o cron
+ * processar depois). Sempre registra o resultado em scheduled_posts, mesmo
+ * quando é "agora", para aparecer em Minhas publicações. */
+export async function createPost(
+  formData: FormData
+): Promise<{ ok: boolean; error?: string }> {
+  const userId = await requireUserId();
+  const content = String(formData.get("content") ?? "").trim();
+  const imageUrl = String(formData.get("image_url") ?? "") || null;
+  const channels = formData.getAll("channels").map(String);
+  const mode = String(formData.get("mode") ?? "agora");
+  const scheduledForRaw = String(formData.get("scheduled_for") ?? "");
+
+  if (!content || channels.length === 0) {
+    return { ok: false, error: "Escreva um texto e selecione ao menos um canal." };
+  }
+
+  if (mode === "agendar") {
+    if (!scheduledForRaw) return { ok: false, error: "Escolha data e hora." };
+    await db.query(
+      `INSERT INTO scheduled_posts (user_id, content, image_url, channels, status, scheduled_for)
+       VALUES ($1,$2,$3,$4,'agendado',$5)`,
+      [userId, content, imageUrl, channels, new Date(scheduledForRaw).toISOString()]
+    );
+    revalidatePath("/social/publicacoes");
+    return { ok: true };
+  }
+
+  const { rows: integrationRows } = await db.query<{
+    channel: string;
+    external_account_id: string | null;
+    access_token_encrypted: string | null;
+  }>(
+    `SELECT channel, external_account_id, access_token_encrypted FROM channel_integrations WHERE user_id=$1`,
+    [userId]
+  );
+  const byChannel = Object.fromEntries(integrationRows.map((r) => [r.channel, r]));
+
+  const errors: string[] = [];
+  for (const channel of channels) {
+    try {
+      if (channel === "facebook") {
+        const c = byChannel.facebook;
+        if (!c?.external_account_id || !c.access_token_encrypted) throw new Error("Facebook não conectado.");
+        await publishFacebookPost({
+          pageId: c.external_account_id,
+          pageToken: c.access_token_encrypted,
+          message: content,
+          imageUrl: imageUrl ?? undefined,
+        });
+      } else if (channel === "instagram") {
+        const c = byChannel.instagram;
+        if (!c?.external_account_id || !c.access_token_encrypted || !imageUrl) {
+          throw new Error("Instagram precisa de uma imagem e de conexão ativa.");
+        }
+        await publishInstagramPost({
+          igUserId: c.external_account_id,
+          pageToken: c.access_token_encrypted,
+          imageUrl,
+          caption: content,
+        });
+      } else if (channel === "tiktok") {
+        const result = await publishTiktokPost();
+        if (!result.ok) throw new Error(result.reason);
+      }
+    } catch (err: any) {
+      errors.push(`${channel}: ${err.message}`);
+    }
+  }
+
+  await db.query(
+    `INSERT INTO scheduled_posts (user_id, content, image_url, channels, status, published_at, error)
+     VALUES ($1,$2,$3,$4,$5,now(),$6)`,
+    [
+      userId,
+      content,
+      imageUrl,
+      channels,
+      errors.length === 0 ? "publicado" : "falhou",
+      errors.length ? errors.join("; ") : null,
+    ]
+  );
+  revalidatePath("/social/publicacoes");
+  return { ok: errors.length === 0, error: errors.join("; ") || undefined };
+}
+
+export async function cancelScheduledPost(id: string) {
+  const userId = await requireUserId();
+  await db.query(
+    `UPDATE scheduled_posts SET status='cancelado' WHERE id=$1 AND user_id=$2 AND status='agendado'`,
+    [id, userId]
+  );
+  revalidatePath("/social/publicacoes");
 }
