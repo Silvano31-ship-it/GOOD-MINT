@@ -1,8 +1,8 @@
 // app/api/auth/register/route.ts
 // POST /api/auth/register
 // Cria o usuário + assinatura em trial de 3 dias (seção 11 da spec), tudo
-// numa transação. O cartão é cadastrado num passo seguinte (tela 5), via
-// gateway — este endpoint não toca em dados de cartão.
+// numa transação. O cartão NÃO é coletado aqui — o cliente entra direto no
+// painel e decide depois (em Configurações → Plano) se quer assinar.
 
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
@@ -15,9 +15,10 @@ import {
 import { createSession } from "@/lib/session";
 
 const TRIAL_DAYS = 3;
+const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro", "mint_business"]);
 
 export async function POST(req: Request) {
-  let input: RegisterInput;
+  let input: RegisterInput & { planCode?: string };
   try {
     input = await req.json();
   } catch {
@@ -28,6 +29,8 @@ export async function POST(req: Request) {
   if (errors.length > 0) {
     return NextResponse.json({ errors }, { status: 422 });
   }
+
+  const planCode = VALID_PLAN_CODES.has(input.planCode ?? "") ? input.planCode! : "mint_start";
 
   const existing = await findUserByEmail(input.email);
   if (existing) {
@@ -51,19 +54,23 @@ export async function POST(req: Request) {
     );
     const userId = userRes.rows[0].id;
 
-    await client.query(
+    const planRes = await client.query<{ id: string }>(
       `INSERT INTO subscriptions (user_id, plan_id, status, trial_ends_at)
        SELECT $1, id, 'trialing', now() + interval '${TRIAL_DAYS} days'
-       FROM plans WHERE code = 'mint_start'`,
-      [userId]
+       FROM plans WHERE code = $2
+       RETURNING id`,
+      [userId, planCode]
     );
+    if (planRes.rowCount === 0) {
+      throw new Error(`Plano '${planCode}' não encontrado`);
+    }
 
     await client.query("COMMIT");
 
     await createSession({ userId, email: input.email.toLowerCase() });
 
     return NextResponse.json(
-      { ok: true, trialDays: TRIAL_DAYS, redirect: "/cadastro/pagamento" },
+      { ok: true, trialDays: TRIAL_DAYS, redirect: "/dashboard" },
       { status: 201 }
     );
   } catch (err) {

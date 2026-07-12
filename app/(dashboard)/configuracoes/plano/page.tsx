@@ -6,6 +6,7 @@ import { listSubscriptionPayments } from "@/lib/asaas";
 import { cancelMySubscription } from "@/app/(dashboard)/actions";
 import { PageHeader, Badge } from "@/components/ui";
 import { formatBRL, formatDate } from "@/lib/format";
+import { SubscribeForm } from "@/components/configuracoes/SubscribeForm";
 
 const STATUS_LABELS: Record<string, string> = {
   trialing: "Em teste grátis", active: "Ativa", past_due: "Pagamento pendente",
@@ -19,11 +20,14 @@ export default async function PlanoPage() {
   const { rows } = await db.query<{
     id: string; status: string; gateway_subscription_id: string | null;
     current_period_end: string | null; card_last4: string | null; card_brand: string | null;
-    trial_ends_at: string;
+    trial_ends_at: string; plan_code: string; plan_name: string; plan_price_cents: number;
   }>(
     `SELECT s.id, s.status, s.gateway_subscription_id, s.current_period_end,
-            s.card_last4, s.card_brand, s.trial_ends_at
-     FROM subscriptions s WHERE s.user_id=$1 ORDER BY s.created_at DESC LIMIT 1`,
+            s.card_last4, s.card_brand, s.trial_ends_at,
+            p.code AS plan_code, p.name AS plan_name, p.price_cents AS plan_price_cents
+     FROM subscriptions s
+     JOIN plans p ON p.id = s.plan_id
+     WHERE s.user_id=$1 ORDER BY s.created_at DESC LIMIT 1`,
     [user.id]
   );
   const subscription = rows[0];
@@ -37,6 +41,8 @@ export default async function PlanoPage() {
     }
   }
 
+  const hasCard = !!subscription?.gateway_subscription_id;
+
   return (
     <div>
       <Link href="/configuracoes" className="text-sm text-gm-500 hover:underline">← Configurações</Link>
@@ -46,8 +52,13 @@ export default async function PlanoPage() {
         <div className="gm-card p-6 lg:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-semibold uppercase tracking-wide text-gm-500">MINT Start</div>
-              <div className="mt-1 text-2xl font-bold text-gm-900">R$ 19,90 <span className="text-sm font-normal text-gm-700/60">/mês</span></div>
+              <div className="text-sm font-semibold uppercase tracking-wide text-gm-500">
+                {subscription?.plan_name ?? "—"}
+              </div>
+              <div className="mt-1 text-2xl font-bold text-gm-900">
+                {formatBRL(subscription?.plan_price_cents)}{" "}
+                <span className="text-sm font-normal text-gm-700/60">/mês</span>
+              </div>
             </div>
             {subscription && <Badge value={subscription.status} label={STATUS_LABELS[subscription.status] ?? subscription.status} />}
           </div>
@@ -64,7 +75,7 @@ export default async function PlanoPage() {
             </p>
           )}
 
-          {subscription && subscription.status !== "canceled" && (
+          {subscription && subscription.status !== "canceled" && hasCard && (
             <form action={cancelMySubscription} className="mt-6">
               <button className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">
                 Cancelar assinatura
@@ -77,6 +88,17 @@ export default async function PlanoPage() {
 
           {subscription?.status === "canceled" && (
             <p className="mt-4 text-sm text-gm-700/60">Assinatura cancelada.</p>
+          )}
+
+          {subscription && !hasCard && subscription.status !== "canceled" && (
+            <div className="mt-6 border-t border-gm-100 pt-6">
+              <h2 className="mb-1 font-semibold text-gm-900">Assinar um plano</h2>
+              <p className="mb-4 text-sm text-gm-700/60">
+                Você ainda não tem um cartão cadastrado. Escolha um plano e assine
+                quando quiser — sem cobrança durante o teste grátis.
+              </p>
+              <SubscribeForm currentPlanCode={subscription.plan_code} />
+            </div>
           )}
         </div>
 

@@ -1,6 +1,8 @@
 // app/page.tsx — Landing Page (tela 1). Pública. Paleta azul/branco (seção 6).
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
+import { CrystalSphere } from "@/components/CrystalSphere";
+import { FloatingEmojis } from "@/components/FloatingEmojis";
 
 function Feature({ title, desc, icon }: { title: string; desc: string; icon: string }) {
   return (
@@ -24,6 +26,48 @@ function Step({ n, text }: { n: number; text: string }) {
     </div>
   );
 }
+
+const PLANS = [
+  {
+    code: "mint_start",
+    name: "MINT Start",
+    price: "R$ 19,90",
+    highlight: false,
+    features: [
+      "30 leads ativos",
+      "15 imóveis cadastrados",
+      "Clientes em pós-venda ilimitados",
+      "Central de Mensagens com bot de IA",
+      "Planilhas e exportação",
+    ],
+  },
+  {
+    code: "mint_pro",
+    name: "MINT Pro",
+    price: "R$ 49,90",
+    highlight: true,
+    features: [
+      "Leads e imóveis ilimitados",
+      "Tudo do MINT Start incluso",
+      "Clientes em pós-venda ilimitados",
+      "Central de Mensagens com bot de IA",
+      "Planilhas e exportação",
+    ],
+  },
+  {
+    code: "mint_business",
+    name: "MINT Business",
+    price: "R$ 80,00",
+    highlight: false,
+    features: [
+      "Tudo ilimitado",
+      "Tudo do MINT Pro incluso",
+      "Prioridade nas próximas novidades",
+      "Central de Mensagens com bot de IA",
+      "Planilhas e exportação",
+    ],
+  },
+];
 
 export default function LandingPage() {
   return (
@@ -55,8 +99,9 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="gm-radial relative overflow-hidden">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-20 md:grid-cols-2">
+      <section className="gm-radial gm-radial-animated relative overflow-hidden">
+        <FloatingEmojis />
+        <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-5 py-20 md:grid-cols-2">
           <div>
             <span className="inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90 ring-1 ring-white/20">
               CRM para corretores autônomos
@@ -85,19 +130,15 @@ export default function LandingPage() {
               </a>
             </div>
             <p className="mt-3 text-xs text-white/60">
-              Sem cobrança durante o teste. Cancele quando quiser.
+              Sem cartão de crédito no cadastro. Cancele quando quiser.
             </p>
           </div>
 
-          {/* Esfera "bola de cristal" decorativa */}
-          <div className="relative mx-auto hidden h-80 w-80 md:block">
-            <div className="gm-breathe absolute inset-0 rounded-full bg-gradient-to-br from-gm-300/40 to-gm-500/30 blur-2xl" />
-            <div className="absolute inset-6 rounded-full border border-white/20 gm-glass" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="gm-glass rounded-2xl px-5 py-4 text-center text-white">
-                <div className="text-3xl font-bold">R$ 19,90</div>
-                <div className="text-xs text-white/70">por mês, tudo incluído</div>
-              </div>
+          {/* Esfera "bola de cristal" — impecável, sem dados atrelados */}
+          <div className="relative mx-auto hidden flex-col items-center md:flex">
+            <div className="gm-breathe absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-gm-300/30 to-gm-500/20 blur-3xl" />
+            <div className="relative">
+              <CrystalSphere empty={false} caption="Sua bola de cristal do negócio" />
             </div>
           </div>
         </div>
@@ -130,32 +171,86 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Plano */}
+      {/* Diferencial: pré-venda + pós-venda */}
+      <section className="bg-gm-50 py-16">
+        <div className="mx-auto max-w-5xl px-5">
+          <div className="grid gap-8 md:grid-cols-2">
+            <div className="gm-card p-8">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gm-500">
+                O problema comum
+              </span>
+              <h3 className="mt-2 text-xl font-bold text-gm-900">
+                CRM genérico só cuida da venda
+              </h3>
+              <p className="mt-3 text-sm text-gm-700/70">
+                Depois que o cliente compra, ele fica sem saber em que pé está a
+                documentação, o financiamento, a assinatura. O corretor perde
+                tempo respondendo "cadê meu processo?" repetidamente — e o
+                cliente fica ansioso, mesmo com a venda fechada.
+              </p>
+            </div>
+            <div className="gm-card border-2 border-gm-300 p-8">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gm-500">
+                A solução GOOD MINT
+              </span>
+              <h3 className="mt-2 text-xl font-bold text-gm-900">
+                Pré-venda e pós-venda, sempre atualizados
+              </h3>
+              <p className="mt-3 text-sm text-gm-700/70">
+                Cada mudança de etapa dispara um aviso automático pro cliente.
+                Documentação enviada, análise de crédito, aprovação, assinatura,
+                registro, entrega das chaves — tudo acompanhado, sem esforço
+                manual do corretor.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Planos */}
       <section id="plano" className="gm-radial">
         <div className="mx-auto max-w-6xl px-5 py-16">
-          <h2 className="text-center text-3xl font-bold text-white">Plano e preço</h2>
-          <p className="mt-2 text-center text-white/70">Um plano simples, sem pegadinha.</p>
-          <div className="mx-auto mt-8 max-w-sm rounded-2xl bg-white p-8 shadow-2xl">
-            <div className="text-sm font-semibold uppercase tracking-wide text-gm-500">
-              MINT Start
-            </div>
-            <div className="mt-2 flex items-end gap-1">
-              <span className="text-4xl font-bold text-gm-900">R$ 19,90</span>
-              <span className="pb-1 text-gm-700/60">/mês</span>
-            </div>
-            <ul className="mt-6 space-y-2 text-sm text-gm-700">
-              <li>✓ 30 leads ativos</li>
-              <li>✓ 15 imóveis cadastrados</li>
-              <li>✓ Clientes em pós-venda <b>ilimitados</b></li>
-              <li>✓ Central de Mensagens com bot de IA</li>
-              <li>✓ Planilhas e exportação</li>
-            </ul>
-            <Link
-              href="/cadastro"
-              className="mt-7 block rounded-xl bg-gm-500 py-3 text-center font-semibold text-white hover:bg-gm-600"
-            >
-              Começar teste grátis de 3 dias
-            </Link>
+          <h2 className="text-center text-3xl font-bold text-white">Planos e preços</h2>
+          <p className="mt-2 text-center text-white/70">
+            Comece grátis por 3 dias, sem cartão. Escolha o plano quando quiser.
+          </p>
+          <div className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-3">
+            {PLANS.map((plan) => (
+              <div
+                key={plan.code}
+                className={`relative rounded-2xl bg-white p-7 shadow-2xl ${
+                  plan.highlight ? "ring-2 ring-gm-300 md:-translate-y-3" : ""
+                }`}
+              >
+                {plan.highlight && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gm-500 px-3 py-1 text-xs font-semibold text-white">
+                    Mais popular
+                  </span>
+                )}
+                <div className="text-sm font-semibold uppercase tracking-wide text-gm-500">
+                  {plan.name}
+                </div>
+                <div className="mt-2 flex items-end gap-1">
+                  <span className="text-3xl font-bold text-gm-900">{plan.price}</span>
+                  <span className="pb-1 text-sm text-gm-700/60">/mês</span>
+                </div>
+                <ul className="mt-5 space-y-2 text-sm text-gm-700">
+                  {plan.features.map((f) => (
+                    <li key={f}>✓ {f}</li>
+                  ))}
+                </ul>
+                <Link
+                  href={`/cadastro?plano=${plan.code}`}
+                  className={`mt-6 block rounded-xl py-3 text-center font-semibold ${
+                    plan.highlight
+                      ? "bg-gm-500 text-white hover:bg-gm-600"
+                      : "bg-gm-50 text-gm-700 hover:bg-gm-100"
+                  }`}
+                >
+                  Começar teste grátis
+                </Link>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -165,7 +260,7 @@ export default function LandingPage() {
         <h2 className="text-center text-3xl font-bold text-gm-900">Perguntas frequentes</h2>
         <div className="mt-8 space-y-4">
           {[
-            ["Como funciona o teste grátis?", "Você usa o GOOD MINT por 3 dias sem nenhuma cobrança. Pedimos o cartão no cadastro, mas ele só é cobrado ao final do teste, se você continuar."],
+            ["Como funciona o teste grátis?", "Você usa o GOOD MINT por 3 dias sem nenhuma cobrança e sem precisar cadastrar cartão. Se quiser continuar depois do teste, escolhe um plano e cadastra o pagamento quando quiser."],
             ["Posso cancelar quando quiser?", "Sim. O cancelamento é imediato e sem multa. Você mantém o acesso até o fim do período já pago."],
             ["Preciso instalar algo?", "Não. O GOOD MINT roda no navegador do celular, tablet ou computador."],
           ].map(([q, a]) => (

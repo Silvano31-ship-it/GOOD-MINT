@@ -1,26 +1,31 @@
 // components/AuthShell.tsx — layout das telas de autenticação (split azul/branco).
 import Link from "next/link";
 import { Logo } from "./Logo";
+import { FloatingEmojis } from "./FloatingEmojis";
 
 export function AuthShell({
   title,
   subtitle,
   children,
   footer,
+  animated = false,
 }: {
   title: string;
   subtitle?: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Ativa emojis flutuantes no painel visual (tela de Cadastro). */
+  animated?: boolean;
 }) {
   return (
     <div className="grid min-h-screen md:grid-cols-2">
       {/* Lado visual */}
-      <div className="gm-radial hidden flex-col justify-between p-10 text-white md:flex">
-        <Link href="/">
+      <div className={`gm-radial relative hidden flex-col justify-between overflow-hidden p-10 text-white md:flex ${animated ? "gm-radial-animated" : ""}`}>
+        {animated && <FloatingEmojis />}
+        <Link href="/" className="relative z-10">
           <Logo variant="light" size={30} />
         </Link>
-        <div>
+        <div className="relative z-10">
           <h2 className="text-3xl font-bold leading-snug">
             Pré-venda e pós-venda,
             <br /> num só lugar.
@@ -30,7 +35,7 @@ export function AuthShell({
             entrega das chaves.
           </p>
         </div>
-        <p className="text-xs text-white/50">© {new Date().getFullYear()} GOOD MINT</p>
+        <p className="relative z-10 text-xs text-white/50">© {new Date().getFullYear()} GOOD MINT</p>
       </div>
 
       {/* Lado formulário */}

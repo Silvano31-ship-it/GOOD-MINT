@@ -1,14 +1,16 @@
 // app/api/subscribe/route.ts — POST
-// Chamado pela tela 5 (cadastro/pagamento). Cria o cliente e a assinatura
-// recorrente no Asaas (cartão tokenizado), com nextDueDate no fim do trial
-// de 3 dias. A confirmação de cobrança chega depois via webhook.
+// Chamado em Configurações → Plano (ou na tela de pagamento legada). Cria o
+// cliente e a assinatura recorrente no Asaas (cartão tokenizado). Se
+// `planCode` for enviado, troca o plano da assinatura antes de cobrar —
+// permite ao usuário escolher/mudar de plano (Start/Pro/Business) na hora
+// de assinar. O preço é sempre lido da tabela `plans`, nunca fixo no código.
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { createCustomer, createCreditCardSubscription } from "@/lib/asaas";
 import { onlyDigits, isoDatePlusDays } from "@/lib/format";
 
-const PLAN_PRICE_REAIS = 19.9;
+const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro", "mint_business"]);
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -23,6 +25,7 @@ export async function POST(req: Request) {
     cpfCnpj?: string;
     postalCode?: string;
     addressNumber?: string;
+    planCode?: string;
   };
   try {
     body = await req.json();
@@ -30,7 +33,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "JSON inválido." }, { status: 400 });
   }
 
-  const { holderName, number, expiryMonth, expiryYear, ccv, cpfCnpj, postalCode, addressNumber } = body;
+  const { holderName, number, expiryMonth, expiryYear, ccv, cpfCnpj, postalCode, addressNumber, planCode } = body;
   if (!holderName || !number || !expiryMonth || !expiryYear || !ccv || !cpfCnpj || !postalCode || !addressNumber) {
     return NextResponse.json({ error: "Preencha todos os campos do cartão." }, { status: 422 });
   }
@@ -50,6 +53,22 @@ export async function POST(req: Request) {
   if (!subscription) {
     return NextResponse.json({ error: "Assinatura não encontrada. Refaça o cadastro." }, { status: 404 });
   }
+
+  // Troca de plano opcional (usuário escolhendo Start/Pro/Business na hora de assinar)
+  if (planCode && VALID_PLAN_CODES.has(planCode)) {
+    await db.query(
+      `UPDATE subscriptions SET plan_id = (SELECT id FROM plans WHERE code = $1) WHERE id = $2`,
+      [planCode, subscription.id]
+    );
+  }
+
+  const { rows: planRows } = await db.query<{ name: string; price_cents: number }>(
+    `SELECT p.name, p.price_cents FROM subscriptions s
+     JOIN plans p ON p.id = s.plan_id WHERE s.id = $1`,
+    [subscription.id]
+  );
+  const plan = planRows[0];
+  if (!plan) return NextResponse.json({ error: "Plano não encontrado." }, { status: 404 });
 
   const remoteIp =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
@@ -73,9 +92,9 @@ export async function POST(req: Request) {
 
     const asaasSub = await createCreditCardSubscription({
       customer: customer.id,
-      value: PLAN_PRICE_REAIS,
+      value: plan.price_cents / 100,
       nextDueDate,
-      description: "GOOD MINT — Plano MINT Start",
+      description: `GOOD MINT — Plano ${plan.name}`,
       creditCard: { holderName, number, expiryMonth, expiryYear, ccv },
       holderInfo: {
         name: holderName,

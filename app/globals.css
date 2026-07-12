@@ -51,3 +51,27 @@ body {
   50% { transform: translateY(-6px); }
 }
 .gm-breathe { animation: gm-float 5s ease-in-out infinite; }
+
+/* Fundo "vivo": leve deslocamento do degradê radial, efeito premium sutil */
+.gm-radial-animated {
+  background-size: 160% 160%;
+  animation: gm-shimmer 14s ease-in-out infinite;
+}
+@keyframes gm-shimmer {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 100% 30%; }
+}
+
+/* Emojis decorativos flutuando (cadastro, landing) */
+@keyframes gm-emoji-drift {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  25%  { transform: translate(10px, -18px) rotate(6deg); }
+  50%  { transform: translate(-6px, -6px) rotate(-4deg); }
+  75%  { transform: translate(-14px, -22px) rotate(5deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+.gm-emoji-float {
+  animation-name: gm-emoji-drift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}

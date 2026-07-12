@@ -12,7 +12,14 @@ interface Particle {
   r: number;
 }
 
-export function CrystalSphere({ empty }: { empty: boolean }) {
+export function CrystalSphere({
+  empty,
+  caption,
+}: {
+  empty: boolean;
+  /** Sobrescreve a legenda padrão (usado na landing, fora do contexto de dados). */
+  caption?: string;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouse = useRef({ x: 0, y: 0 });
 
@@ -113,12 +120,14 @@ export function CrystalSphere({ empty }: { empty: boolean }) {
         style={{ width: 300, height: 300 }}
         className="gm-breathe"
       />
-      {empty && (
+      {caption ? (
+        <p className="mx-auto -mt-4 max-w-xs text-center text-sm text-white/70">{caption}</p>
+      ) : empty ? (
         <p className="mx-auto -mt-4 max-w-xs text-center text-sm text-white/70">
           Sua bola de cristal está vazia por enquanto. Comece cadastrando leads,
           imóveis e negociações para vê-la ganhar vida.
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
