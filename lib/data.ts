@@ -239,11 +239,16 @@ export async function getPostSaleDashboardMetrics(userId: string): Promise<PostS
     [userId]
   );
 
+  // A função de janela (lag) precisa ser calculada numa subconsulta antes de
+  // agregar com avg() — Postgres não permite aggregate(window_function(...))
+  // diretamente na mesma consulta.
   const { rows: avgRows } = await db.query<{ avg_days: string | null }>(
-    `SELECT avg(extract(epoch FROM (changed_at - lag(changed_at) OVER (PARTITION BY post_sale_id ORDER BY changed_at)))) / 86400 AS avg_days
-     FROM post_sale_stage_history h
-     JOIN post_sale_processes ps ON ps.id = h.post_sale_id
-     WHERE ps.user_id = $1`,
+    `SELECT avg(day_diff) AS avg_days FROM (
+       SELECT extract(epoch FROM (changed_at - lag(changed_at) OVER (PARTITION BY post_sale_id ORDER BY changed_at))) / 86400 AS day_diff
+       FROM post_sale_stage_history h
+       JOIN post_sale_processes ps ON ps.id = h.post_sale_id
+       WHERE ps.user_id = $1
+     ) sub`,
     [userId]
   );
 
