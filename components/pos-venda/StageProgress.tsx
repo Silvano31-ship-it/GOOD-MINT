@@ -1,15 +1,24 @@
 // components/pos-venda/StageProgress.tsx — barra de progresso das etapas do pós-venda.
 import { POST_SALE_STAGES } from "@/lib/constants";
 
-export function StageProgress({ current, compact = false }: { current: string; compact?: boolean }) {
-  const idx = POST_SALE_STAGES.findIndex((s) => s.key === current);
-  const pct = Math.round(((idx + 1) / POST_SALE_STAGES.length) * 100);
+export function StageProgress({
+  current,
+  compact = false,
+  isFinanced = true,
+}: {
+  current: string;
+  compact?: boolean;
+  isFinanced?: boolean;
+}) {
+  const stages = POST_SALE_STAGES.filter((s) => !("conditional" in s && s.conditional) || isFinanced);
+  const idx = stages.findIndex((s) => s.key === current);
+  const pct = Math.round(((idx + 1) / stages.length) * 100);
 
   if (compact) {
     return (
       <div>
         <div className="mb-1 flex items-center justify-between text-xs text-gm-700/60">
-          <span>{POST_SALE_STAGES[idx]?.label ?? current}</span>
+          <span>{stages[idx]?.label ?? current}</span>
           <span>{pct}%</span>
         </div>
         <div className="h-2 w-full overflow-hidden rounded-full bg-gm-100">
@@ -21,7 +30,7 @@ export function StageProgress({ current, compact = false }: { current: string; c
 
   return (
     <ol className="relative flex flex-col gap-0">
-      {POST_SALE_STAGES.map((s, i) => {
+      {stages.map((s, i) => {
         const done = i < idx;
         const active = i === idx;
         return (
@@ -34,7 +43,7 @@ export function StageProgress({ current, compact = false }: { current: string; c
               >
                 {done ? "✓" : i + 1}
               </span>
-              {i < POST_SALE_STAGES.length - 1 && (
+              {i < stages.length - 1 && (
                 <span className={`mt-1 h-8 w-0.5 ${done ? "bg-gm-500" : "bg-gm-100"}`} />
               )}
             </div>
