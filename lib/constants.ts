@@ -12,13 +12,42 @@ export const LEAD_STAGES = [
   { key: "perdido", label: "Perdido" },
 ] as const;
 
+// Fluxo vigente (9 etapas). Os 4 valores legados do enum do banco
+// ('documentacao_enviada', 'analise_credito', 'aprovacao', 'registro_cartorio')
+// não aparecem mais aqui — processos antigos já foram remapeados pela
+// migration 007. `conditional: true` marca a etapa de financiamento, que só
+// é exibida/exigida quando o processo tem `is_financed = true`.
 export const POST_SALE_STAGES = [
-  { key: "documentacao_enviada", label: "Documentação Enviada" },
-  { key: "analise_credito", label: "Análise de Crédito" },
-  { key: "aprovacao", label: "Aprovação" },
-  { key: "assinatura_contrato", label: "Assinatura de Contrato" },
-  { key: "registro_cartorio", label: "Registro em Cartório" },
-  { key: "entrega_chaves", label: "Entrega de Chaves" },
+  { key: "assinatura_contrato", label: "Assinatura do Contrato" },
+  { key: "envio_documentos_cartorio", label: "Envio de Documentos ao Cartório" },
+  { key: "validacao_registro", label: "Validação do Registro" },
+  { key: "liberacao_financiamento", label: "Liberação do Financiamento", conditional: true },
+  { key: "vistoria_imovel", label: "Vistoria do Imóvel" },
+  { key: "assinatura_escritura", label: "Assinatura da Escritura" },
+  { key: "entrega_chaves", label: "Entrega das Chaves" },
+  { key: "transferencia_contas", label: "Transferência de Contas (Luz/Água)" },
+  { key: "pesquisa_satisfacao", label: "Pesquisa de Satisfação" },
+] as const;
+
+/** Ordem linear das chaves de etapa — usada pela guarda forward-only. */
+export const NEW_STAGE_ORDER = POST_SALE_STAGES.map((s) => s.key);
+
+export const KANBAN_STATUSES = [
+  { key: "a_fazer", label: "A Fazer" },
+  { key: "em_andamento", label: "Em Andamento" },
+  { key: "aguardando_cliente", label: "Aguardando Cliente" },
+  { key: "aguardando_documentos", label: "Aguardando Documentos" },
+  { key: "concluido", label: "Concluído" },
+] as const;
+
+export const CHECKLIST_DOCUMENT_TYPES = [
+  { key: "rg_cpf", label: "RG/CPF" },
+  { key: "comprovante_renda", label: "Comprovante de Renda" },
+  { key: "comprovante_residencia", label: "Comprovante de Residência" },
+  { key: "certidao_estado_civil", label: "Certidão de Estado Civil" },
+  { key: "contrato_assinado", label: "Contrato Assinado" },
+  { key: "comprovante_pagamento", label: "Comprovante de Pagamento" },
+  { key: "outro", label: "Outro" },
 ] as const;
 
 export interface Lead {
@@ -59,9 +88,45 @@ export interface PostSale {
   id: string;
   lead_name: string;
   property_address: string | null;
+  value_cents: string | null;
   current_stage: string;
   stage_updated_at: string;
   next_action: string | null;
+  next_action_due_at: string | null;
+  is_financed: boolean;
+  kanban_status: string;
+  referral_token: string;
+}
+
+export interface ChecklistItem {
+  id: string;
+  document_type: string;
+  label: string;
+  is_required: boolean;
+  status: string;
+  file_url: string | null;
+  ai_verdict: string | null;
+  ai_notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Communication {
+  id: string;
+  kind: string; // 'nota_interna' | 'mensagem_cliente'
+  channel: string | null; // 'email' | 'whatsapp' | null
+  content: string;
+  sent_at: string | null;
+  created_at: string;
+}
+
+export interface Referral {
+  id: string;
+  referred_name: string | null;
+  referred_phone: string | null;
+  reward_description: string | null;
+  status: string;
+  created_at: string;
 }
 
 export interface Task {
@@ -80,3 +145,23 @@ export interface Notification {
   read_at: string | null;
   created_at: string;
 }
+
+/** Duas primeiras iniciais do nome, em maiúsculas (avatar de fallback). */
+export function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0][0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? "" : "";
+  return (first + last).toUpperCase();
+}
+
+/** Grupos de emoji sugeridos no seletor do Dashboard. */
+export const EMOJI_GROUPS: Record<string, string[]> = {
+  Corretor: ["🧑‍💼", "🤝", "🏠", "🔑", "📈", "💼"],
+  Motivação: ["🚀", "🔥", "💪", "🏆", "⭐", "🎯"],
+  Leve: ["😄", "☕", "🌱", "🎉", "👋", "✨"],
+};
+
+/** Número oficial de suporte (WhatsApp), usado na tela de Suporte e no rodapé. */
+export const SUPPORT_WHATSAPP = "5592984906392";
+export const SUPPORT_PHONE_DISPLAY = "(92) 98490-6392";

@@ -14,6 +14,8 @@ const PUBLIC_PATHS = [
   "/recuperar-senha",
   "/termos",
   "/privacidade",
+  "/acompanhar", // portal do cliente (link mágico, sem login)
+  "/indicar", // formulário público de indicação de clientes
 ];
 
 function isPublic(pathname: string): boolean {
@@ -27,6 +29,7 @@ export async function middleware(req: NextRequest) {
     isPublic(pathname) ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/webhooks") ||
+    pathname.startsWith("/api/cron") ||
     pathname.startsWith("/_next") ||
     pathname.includes(".")
   ) {

@@ -12,12 +12,15 @@ import {
   type Property,
   type Negotiation,
   type PostSale,
+  type ChecklistItem,
+  type Communication,
+  type Referral,
   type Task,
   type Notification,
 } from "./constants";
 
 export { LEAD_STAGES, POST_SALE_STAGES };
-export type { Lead, Property, Negotiation, PostSale, Task, Notification };
+export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification };
 
 export interface Counts {
   leadsActive: number;
@@ -34,7 +37,7 @@ export async function getCounts(userId: string): Promise<Counts> {
        (SELECT count(*) FROM leads WHERE user_id = $1 AND is_active) AS leads_active,
        (SELECT count(*) FROM properties WHERE user_id = $1 AND is_active) AS properties,
        (SELECT count(*) FROM negotiations WHERE user_id = $1 AND status = 'aberta') AS negotiations_open,
-       (SELECT count(*) FROM post_sale_processes WHERE user_id = $1 AND current_stage <> 'entrega_chaves') AS post_sale_active,
+       (SELECT count(*) FROM post_sale_processes WHERE user_id = $1 AND current_stage <> 'pesquisa_satisfacao') AS post_sale_active,
        (SELECT p.lead_limit FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.user_id = $1 ORDER BY s.created_at DESC LIMIT 1) AS lead_limit,
        (SELECT p.property_limit FROM subscriptions s JOIN plans p ON p.id = s.plan_id WHERE s.user_id = $1 ORDER BY s.created_at DESC LIMIT 1) AS property_limit`,
     [userId]
@@ -99,10 +102,15 @@ export async function getNegotiations(userId: string): Promise<Negotiation[]> {
   return rows;
 }
 
+const POST_SALE_LIST_SELECT = `
+  ps.id, l.name AS lead_name, p.address AS property_address, n.value_cents,
+  ps.current_stage, ps.stage_updated_at, ps.next_action, ps.next_action_due_at,
+  ps.is_financed, ps.kanban_status, ps.referral_token
+`;
+
 export async function getPostSales(userId: string): Promise<PostSale[]> {
   const { rows } = await db.query<PostSale>(
-    `SELECT ps.id, l.name AS lead_name, p.address AS property_address,
-            ps.current_stage, ps.stage_updated_at, ps.next_action
+    `SELECT ${POST_SALE_LIST_SELECT}
      FROM post_sale_processes ps
      JOIN negotiations n ON n.id = ps.negotiation_id
      JOIN leads l ON l.id = n.lead_id
@@ -113,15 +121,25 @@ export async function getPostSales(userId: string): Promise<PostSale[]> {
   return rows;
 }
 
+export interface TimelineEntry {
+  kind: "etapa" | "comunicacao" | "documento";
+  label: string;
+  detail: string | null;
+  ts: string;
+}
+
 export interface PostSaleDetail extends PostSale {
   history: { to_stage: string; changed_at: string; note: string | null }[];
   messages: { stage: string; sent_at: string }[];
+  checklist: ChecklistItem[];
+  communications: Communication[];
+  referrals: Referral[];
+  timeline: TimelineEntry[];
 }
 
 export async function getPostSale(userId: string, id: string): Promise<PostSaleDetail | null> {
   const { rows } = await db.query<PostSale>(
-    `SELECT ps.id, l.name AS lead_name, p.address AS property_address,
-            ps.current_stage, ps.stage_updated_at, ps.next_action
+    `SELECT ${POST_SALE_LIST_SELECT}
      FROM post_sale_processes ps
      JOIN negotiations n ON n.id = ps.negotiation_id
      JOIN leads l ON l.id = n.lead_id
@@ -130,17 +148,165 @@ export async function getPostSale(userId: string, id: string): Promise<PostSaleD
     [userId, id]
   );
   if (!rows[0]) return null;
-  const { rows: history } = await db.query(
-    `SELECT to_stage, changed_at, note FROM post_sale_stage_history
-     WHERE post_sale_id = $1 ORDER BY changed_at ASC`,
-    [id]
+
+  const [historyRes, messagesRes, checklistRes, communicationsRes, referralsRes] = await Promise.all([
+    db.query(
+      `SELECT to_stage, changed_at, note FROM post_sale_stage_history
+       WHERE post_sale_id = $1 ORDER BY changed_at ASC`,
+      [id]
+    ),
+    db.query(
+      `SELECT stage, sent_at FROM post_sale_notifications_sent
+       WHERE post_sale_id = $1 ORDER BY sent_at ASC`,
+      [id]
+    ),
+    db.query<ChecklistItem>(
+      `SELECT id, document_type, label, is_required, status, file_url, ai_verdict, ai_notes, created_at, updated_at
+       FROM post_sale_checklist_items WHERE post_sale_id = $1 ORDER BY created_at ASC`,
+      [id]
+    ),
+    db.query<Communication>(
+      `SELECT id, kind, channel, content, sent_at, created_at
+       FROM post_sale_communications WHERE post_sale_id = $1 ORDER BY created_at ASC`,
+      [id]
+    ),
+    db.query<Referral>(
+      `SELECT id, referred_name, referred_phone, reward_description, status, created_at
+       FROM referrals WHERE post_sale_id = $1 ORDER BY created_at DESC`,
+      [id]
+    ),
+  ]);
+
+  const history = historyRes.rows as { to_stage: string; changed_at: string; note: string | null }[];
+  const checklist = checklistRes.rows;
+  const communications = communicationsRes.rows;
+
+  const stageLabel = (k: string) => POST_SALE_STAGES.find((s) => s.key === k)?.label ?? k;
+  const timeline: TimelineEntry[] = [
+    ...history.map((h) => ({
+      kind: "etapa" as const,
+      label: stageLabel(h.to_stage),
+      detail: h.note,
+      ts: h.changed_at,
+    })),
+    ...communications.map((c) => ({
+      kind: "comunicacao" as const,
+      label: c.kind === "mensagem_cliente" ? `Mensagem ao cliente (${c.channel ?? "-"})` : "Nota interna",
+      detail: c.content,
+      ts: c.created_at,
+    })),
+    ...checklist
+      .filter((c) => c.file_url)
+      .map((c) => ({
+        kind: "documento" as const,
+        label: `Documento enviado: ${c.label}`,
+        detail: c.ai_verdict ? `Avaliação automática: ${c.ai_verdict}` : null,
+        ts: c.updated_at ?? c.created_at,
+      })),
+  ].sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+
+  return {
+    ...rows[0],
+    history,
+    messages: messagesRes.rows as any,
+    checklist,
+    communications,
+    referrals: referralsRes.rows,
+    timeline,
+  };
+}
+
+export interface PostSaleDashboardMetrics {
+  active: number;
+  completedThisMonth: number;
+  stalled: number;
+  avgDaysPerStage: number;
+  funnel: { key: string; label: string; count: number }[];
+}
+
+export async function getPostSaleDashboardMetrics(userId: string): Promise<PostSaleDashboardMetrics> {
+  const { rows: countRows } = await db.query<{
+    active: string;
+    completed_this_month: string;
+    stalled: string;
+  }>(
+    `SELECT
+       (SELECT count(*) FROM post_sale_processes WHERE user_id=$1 AND current_stage <> 'pesquisa_satisfacao') AS active,
+       (SELECT count(*) FROM post_sale_processes WHERE user_id=$1 AND current_stage = 'pesquisa_satisfacao'
+          AND date_trunc('month', stage_updated_at) = date_trunc('month', now())) AS completed_this_month,
+       (SELECT count(*) FROM post_sale_processes WHERE user_id=$1 AND current_stage <> 'pesquisa_satisfacao'
+          AND stage_updated_at < now() - interval '5 days') AS stalled`,
+    [userId]
   );
-  const { rows: messages } = await db.query(
-    `SELECT stage, sent_at FROM post_sale_notifications_sent
-     WHERE post_sale_id = $1 ORDER BY sent_at ASC`,
-    [id]
+
+  const { rows: avgRows } = await db.query<{ avg_days: string | null }>(
+    `SELECT avg(extract(epoch FROM (changed_at - lag(changed_at) OVER (PARTITION BY post_sale_id ORDER BY changed_at)))) / 86400 AS avg_days
+     FROM post_sale_stage_history h
+     JOIN post_sale_processes ps ON ps.id = h.post_sale_id
+     WHERE ps.user_id = $1`,
+    [userId]
   );
-  return { ...rows[0], history: history as any, messages: messages as any };
+
+  const { rows: funnelRows } = await db.query<{ current_stage: string; c: string }>(
+    `SELECT current_stage, count(*)::int AS c FROM post_sale_processes WHERE user_id=$1 GROUP BY current_stage`,
+    [userId]
+  );
+  const byStage = Object.fromEntries(funnelRows.map((r) => [r.current_stage, Number(r.c)]));
+  const funnel = POST_SALE_STAGES.map((s) => ({ key: s.key, label: s.label, count: byStage[s.key] ?? 0 }));
+
+  const r = countRows[0];
+  return {
+    active: Number(r.active),
+    completedThisMonth: Number(r.completed_this_month),
+    stalled: Number(r.stalled),
+    avgDaysPerStage: avgRows[0]?.avg_days ? Math.round(Number(avgRows[0].avg_days) * 10) / 10 : 0,
+    funnel,
+  };
+}
+
+export interface PublicPostSaleView {
+  lead_name: string;
+  current_stage: string;
+  is_financed: boolean;
+  checklist: { label: string; status: string }[];
+}
+
+/** Portal do cliente (/acompanhar/[token]) — somente leitura, escopado
+ * exclusivamente pelo token (nunca por user_id/id). Lista de colunas
+ * explícita: nunca inclui value_cents, notas internas ou dados de outra conta. */
+export async function getPostSaleByToken(token: string): Promise<PublicPostSaleView | null> {
+  const { rows } = await db.query<{ id: string; lead_name: string; current_stage: string; is_financed: boolean }>(
+    `SELECT ps.id, l.name AS lead_name, ps.current_stage, ps.is_financed
+     FROM post_sale_processes ps
+     JOIN negotiations n ON n.id = ps.negotiation_id
+     JOIN leads l ON l.id = n.lead_id
+     WHERE ps.referral_token = $1`,
+    [token]
+  );
+  const ps = rows[0];
+  if (!ps) return null;
+
+  const { rows: checklist } = await db.query<{ label: string; status: string }>(
+    `SELECT label, status FROM post_sale_checklist_items WHERE post_sale_id = $1 ORDER BY created_at ASC`,
+    [ps.id]
+  );
+
+  return { lead_name: ps.lead_name, current_stage: ps.current_stage, is_financed: ps.is_financed, checklist };
+}
+
+export async function getUrgentPostSaleTasks(userId: string) {
+  const { rows } = await db.query<{ id: string; lead_name: string; next_action: string | null; next_action_due_at: string }>(
+    `SELECT ps.id, l.name AS lead_name, ps.next_action, ps.next_action_due_at
+     FROM post_sale_processes ps
+     JOIN negotiations n ON n.id = ps.negotiation_id
+     JOIN leads l ON l.id = n.lead_id
+     WHERE ps.user_id = $1 AND ps.next_action_due_at IS NOT NULL
+       AND ps.next_action_due_at <= now() + interval '1 day'
+       AND ps.current_stage <> 'pesquisa_satisfacao'
+     ORDER BY ps.next_action_due_at ASC LIMIT 10`,
+    [userId]
+  );
+  return rows;
 }
 
 export async function getTasks(userId: string): Promise<Task[]> {

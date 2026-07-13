@@ -98,6 +98,29 @@ const STAGE_COLORS: Record<string, string> = {
   aberta: "bg-blue-100 text-blue-700",
   fechada: "bg-green-100 text-green-700",
   perdida: "bg-red-100 text-red-700",
+  agendado: "bg-amber-100 text-amber-700",
+  publicando: "bg-blue-100 text-blue-700",
+  publicado: "bg-green-100 text-green-700",
+  falhou: "bg-red-100 text-red-700",
+  cancelado: "bg-slate-100 text-slate-600",
+  // Pós-venda — 9 etapas do fluxo vigente
+  assinatura_contrato: "bg-blue-100 text-blue-700",
+  envio_documentos_cartorio: "bg-indigo-100 text-indigo-700",
+  validacao_registro: "bg-indigo-100 text-indigo-700",
+  liberacao_financiamento: "bg-amber-100 text-amber-700",
+  vistoria_imovel: "bg-amber-100 text-amber-700",
+  assinatura_escritura: "bg-blue-100 text-blue-700",
+  entrega_chaves: "bg-green-100 text-green-700",
+  transferencia_contas: "bg-slate-100 text-slate-700",
+  pesquisa_satisfacao: "bg-green-100 text-green-700",
+};
+
+export const KANBAN_COLORS: Record<string, string> = {
+  a_fazer: "bg-slate-100 text-slate-700",
+  em_andamento: "bg-blue-100 text-blue-700",
+  aguardando_cliente: "bg-amber-100 text-amber-700",
+  aguardando_documentos: "bg-amber-100 text-amber-700",
+  concluido: "bg-green-100 text-green-700",
 };
 
 export function Badge({ value, label }: { value: string; label: string }) {
