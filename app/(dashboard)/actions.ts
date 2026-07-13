@@ -217,7 +217,7 @@ export async function closeNegotiation(negotiationId: string, startPostSale: boo
   if (startPostSale) {
     await db.query(
       `INSERT INTO post_sale_processes (user_id, negotiation_id, current_stage)
-       VALUES ($1,$2,'documentacao_enviada')
+       VALUES ($1,$2,'assinatura_contrato')
        ON CONFLICT (negotiation_id) DO NOTHING`,
       [userId, negotiationId]
     );
@@ -227,56 +227,9 @@ export async function closeNegotiation(negotiationId: string, startPostSale: boo
   revalidatePath("/dashboard");
 }
 
-// ---------------------------------------------------------------- PÓS-VENDA
-const POST_SALE_ORDER = [
-  "documentacao_enviada",
-  "analise_credito",
-  "aprovacao",
-  "assinatura_contrato",
-  "registro_cartorio",
-  "entrega_chaves",
-];
-
-/** Avança o processo para uma etapa e registra o "envio" automático ao cliente. */
-export async function advancePostSaleStage(postSaleId: string, toStage: string) {
-  const userId = await requireUserId();
-  const { rows } = await db.query<{ current_stage: string }>(
-    `SELECT current_stage FROM post_sale_processes WHERE id=$1 AND user_id=$2`,
-    [postSaleId, userId]
-  );
-  if (!rows[0]) return;
-  const from = rows[0].current_stage;
-  if (from === toStage) return;
-
-  await db.query(
-    `UPDATE post_sale_processes SET current_stage=$1, stage_updated_at=now(), stalled_alert_sent_at=NULL
-     WHERE id=$2 AND user_id=$3`,
-    [toStage, postSaleId, userId]
-  );
-  await db.query(
-    `INSERT INTO post_sale_stage_history (post_sale_id, from_stage, to_stage) VALUES ($1,$2,$3)`,
-    [postSaleId, from, toStage]
-  );
-  // Registra a mensagem automática que seria enviada ao cliente via WhatsApp
-  // (envio real depende da Central de Mensagens conectada — seção 8).
-  await db.query(
-    `INSERT INTO post_sale_notifications_sent (post_sale_id, stage, channel) VALUES ($1,$2,'whatsapp')`,
-    [postSaleId, toStage]
-  );
-  revalidatePath(`/pos-venda/${postSaleId}`);
-  revalidatePath("/pos-venda");
-  revalidatePath("/dashboard");
-}
-
-export async function setPostSaleNextAction(postSaleId: string, formData: FormData) {
-  const userId = await requireUserId();
-  await db.query(`UPDATE post_sale_processes SET next_action=$1 WHERE id=$2 AND user_id=$3`, [
-    String(formData.get("next_action") ?? "") || null,
-    postSaleId,
-    userId,
-  ]);
-  revalidatePath(`/pos-venda/${postSaleId}`);
-}
+// Ações de pós-venda (avançar/corrigir etapa, checklist, comunicação, kanban,
+// indicação) vivem em app/(dashboard)/pos-venda/actions.ts — arquivo próprio,
+// separado deste (que já cobria 6 módulos) para não inchar mais.
 
 // ---------------------------------------------------------------- TAREFAS
 export async function createTask(formData: FormData) {

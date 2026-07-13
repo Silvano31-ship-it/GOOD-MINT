@@ -14,6 +14,8 @@ const PUBLIC_PATHS = [
   "/recuperar-senha",
   "/termos",
   "/privacidade",
+  "/acompanhar", // portal do cliente (link mágico, sem login)
+  "/indicar", // formulário público de indicação de clientes
 ];
 
 function isPublic(pathname: string): boolean {
