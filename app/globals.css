@@ -135,4 +135,9 @@ body {
   .gm-emoji-float {
     animation: none;
   }
+  .gm-reveal {
+    transition: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
