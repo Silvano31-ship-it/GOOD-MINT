@@ -198,19 +198,23 @@ export default function LandingPage() {
       <header className="sticky top-0 z-30 border-b border-gm-100 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
           <Logo />
-          <nav className="hidden items-center gap-6 text-sm font-medium text-gm-700 md:flex">
-            <a href="#funcionalidades" className="hover:text-gm-500">{s.nav.features}</a>
-            <a href="#plano" className="hover:text-gm-500">{s.nav.plan}</a>
-            <a href="#faq" className="hover:text-gm-500">{s.nav.about}</a>
-          </nav>
-          <div className="flex items-center gap-2">
+          <div className="hidden items-center gap-6 md:flex">
+            <nav className="flex items-center gap-6 text-sm font-medium text-gm-700">
+              <a href="#funcionalidades" className="hover:text-gm-500">{s.nav.features}</a>
+              <a href="#plano" className="hover:text-gm-500">{s.nav.plan}</a>
+              <a href="#faq" className="hover:text-gm-500">{s.nav.about}</a>
+            </nav>
+            <div className="h-6 w-px bg-gm-100" aria-hidden="true" />
+          </div>
+          <div className="flex items-center gap-3">
             <button
               onClick={toggleLang}
               aria-label="Trocar idioma / Switch language"
-              className="rounded-lg px-3 py-2 text-sm font-semibold text-gm-700 hover:bg-gm-50"
+              className="rounded-full border border-gm-200 px-3 py-1 text-xs font-medium text-gm-700 hover:bg-gm-50"
             >
               {lang === "pt" ? "🇧🇷 PT" : "🇺🇸 EN"}
             </button>
+            <div className="hidden h-5 w-px bg-gm-200 sm:block" aria-hidden="true" />
             <Link
               href="/login"
               className="rounded-lg px-4 py-2 text-sm font-semibold text-gm-700 hover:bg-gm-50"
