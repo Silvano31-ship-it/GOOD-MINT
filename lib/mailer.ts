@@ -4,7 +4,11 @@
 // (responsabilidade diferente — auth/cobrança vs. pós-venda).
 
 const BASE_URL = "https://api.resend.com";
-const FROM = process.env.RESEND_FROM_EMAIL ?? "GOOD MINT <naoresponda@goodmint.app>";
+// Sem domínio próprio verificado no Resend ainda, usamos o remetente de teste
+// deles (onboarding@resend.dev) — funciona sem configuração extra, mas só
+// entrega pro e-mail cadastrado na conta Resend. Trocar por RESEND_FROM_EMAIL
+// assim que um domínio for verificado (ver lib/resend.ts para o mesmo ajuste).
+const FROM = process.env.RESEND_FROM_EMAIL ?? "GOOD MINT <onboarding@resend.dev>";
 
 async function sendEmail(to: string, subject: string, html: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;

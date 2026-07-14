@@ -6,7 +6,11 @@
 // do reset de senha — responsabilidade diferente, não vale unificar.
 
 const BASE_URL = "https://api.resend.com";
-const FROM = process.env.RESEND_FROM_EMAIL ?? "GOOD MINT <naoresponda@goodmint.app>";
+// Sem domínio próprio verificado no Resend ainda, usamos o remetente de teste
+// deles (onboarding@resend.dev) — funciona sem configuração extra, mas só
+// entrega pro e-mail cadastrado na conta Resend. Trocar por RESEND_FROM_EMAIL
+// assim que um domínio for verificado.
+const FROM = process.env.RESEND_FROM_EMAIL ?? "GOOD MINT <onboarding@resend.dev>";
 
 function apiKey(): string {
   const key = process.env.RESEND_API_KEY;
