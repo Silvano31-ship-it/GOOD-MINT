@@ -67,13 +67,12 @@ export function BackgroundSelector({
   }
 
   return (
-    <div className="gm-card p-4">
-      <h2 className="mb-1 text-sm font-semibold text-gm-900">🖼️ Personalizar Fundo</h2>
-      <p className="mb-3 text-xs text-gm-700/60">
+    <div className="gm-card p-6">
+      <p className="mb-3 text-sm text-gm-700/60">
         Suba uma foto ou um vídeo curto (até 4 MB) pra usar como fundo do seu Dashboard.
       </p>
 
-      <div className="mb-3 flex h-20 w-full items-center justify-center overflow-hidden rounded-lg border border-gm-200 bg-gm-50">
+      <div className="mb-3 flex h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-gm-200 bg-gm-50">
         {url ? (
           type === "video" ? (
             <video src={url} muted className="h-full w-full object-cover" />

@@ -4,7 +4,6 @@ import { requireActiveAccount } from "@/lib/account-guard";
 import { updateProfile } from "@/app/(dashboard)/actions";
 import { PageHeader } from "@/components/ui";
 import { AvatarUpload } from "@/components/AvatarUpload";
-import { BackgroundSelector } from "@/components/dashboard/BackgroundSelector";
 import { SubmitButton } from "@/components/SubmitButton";
 
 const SECTIONS = [
@@ -12,6 +11,7 @@ const SECTIONS = [
   { href: "/configuracoes/notificacoes", icon: "🔔", title: "Notificações", desc: "O que você recebe e onde" },
   { href: "/configuracoes/integracoes", icon: "🔌", title: "Integrações", desc: "WhatsApp, Instagram, Facebook, TikTok" },
   { href: "/configuracoes/bot", icon: "🤖", title: "Bot de IA", desc: "Tom de voz, horários, mensagens automáticas" },
+  { href: "/configuracoes/fundo", icon: "🖼️", title: "Personalizar Fundo", desc: "Foto ou vídeo de fundo do Dashboard" },
 ];
 
 export default async function ConfiguracoesPage() {
@@ -84,7 +84,6 @@ export default async function ConfiguracoesPage() {
               </div>
             </Link>
           ))}
-          <BackgroundSelector currentUrl={user.background_url} currentType={user.background_type} />
         </div>
       </div>
     </div>
