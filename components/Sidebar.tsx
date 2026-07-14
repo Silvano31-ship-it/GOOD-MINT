@@ -26,9 +26,13 @@ const NAV = [
 export function Sidebar({
   userName,
   avatarUrl,
+  transparent,
 }: {
   userName: string;
   avatarUrl?: string | null;
+  /** Sem fundo sólido — usado quando o corretor tem um fundo personalizado no
+   * Dashboard (foto/vídeo), pra ele aparecer por trás do menu inteiro. */
+  transparent?: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -39,7 +43,11 @@ export function Sidebar({
   return (
     <>
       {/* Topbar mobile */}
-      <div className="flex items-center justify-between border-b border-gm-100 bg-gm-50 px-4 py-3 md:hidden">
+      <div
+        className={`flex items-center justify-between border-b px-4 py-3 md:hidden ${
+          transparent ? "border-white/10" : "border-gm-100 bg-gm-50"
+        }`}
+      >
         <Logo size={24} />
         <button
           onClick={() => setOpen((v) => !v)}
@@ -51,9 +59,9 @@ export function Sidebar({
       </div>
 
       <aside
-        className={`${
-          open ? "block" : "hidden"
-        } border-b border-gm-100 bg-gm-50 md:sticky md:top-0 md:block md:h-screen md:w-64 md:flex-none md:border-b-0 md:border-r`}
+        className={`${open ? "block" : "hidden"} ${
+          transparent ? "border-white/10" : "border-gm-100 bg-gm-50"
+        } border-b md:sticky md:top-0 md:block md:h-screen md:w-64 md:flex-none md:border-b-0 md:border-r`}
       >
         <div className="flex h-full flex-col p-4">
           <div className="hidden px-2 py-3 md:block">

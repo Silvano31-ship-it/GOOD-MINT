@@ -97,7 +97,7 @@ export function BackgroundSelector({
           id="dashboard-bg-input"
           ref={inputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm"
+          accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime"
           className="sr-only"
           onChange={onFileChange}
           disabled={loading}

@@ -17,6 +17,9 @@ const EXT_BY_TYPE: Record<string, string> = {
   "image/webp": "webp",
   "video/mp4": "mp4",
   "video/webm": "webm",
+  // .mov — formato padrão de vídeos gravados/exportados direto da galeria do
+  // iPhone sem conversão. O Safari (usado pelo usuário) reproduz nativamente.
+  "video/quicktime": "mov",
 };
 
 export async function POST(req: Request) {
@@ -32,7 +35,7 @@ export async function POST(req: Request) {
   const ext = EXT_BY_TYPE[file.type];
   if (!ext) {
     return NextResponse.json(
-      { error: "Envie uma imagem (JPG/PNG/WEBP) ou um vídeo (MP4/WEBM)." },
+      { error: "Envie uma imagem (JPG/PNG/WEBP) ou um vídeo (MP4/WEBM/MOV)." },
       { status: 422 }
     );
   }

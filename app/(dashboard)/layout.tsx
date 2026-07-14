@@ -17,7 +17,7 @@ export default async function DashboardLayout({
   return (
     <div className="flex min-h-screen flex-col bg-gm-50/40 md:flex-row">
       <DashboardBackground url={user.background_url} type={user.background_type} />
-      <Sidebar userName={user.full_name} avatarUrl={user.avatar_url} />
+      <Sidebar userName={user.full_name} avatarUrl={user.avatar_url} transparent={!!user.background_url} />
       <main className="flex-1">
         {daysLeft !== null && (
           <div className="flex flex-wrap items-center justify-center gap-2 bg-gm-900 px-4 py-2 text-center text-sm text-white">
