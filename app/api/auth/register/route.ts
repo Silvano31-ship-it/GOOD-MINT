@@ -13,6 +13,7 @@ import {
   type RegisterInput,
 } from "@/lib/auth";
 import { createSession } from "@/lib/session";
+import { DEFAULT_DASHBOARD_BACKGROUND } from "@/lib/constants";
 
 const TRIAL_DAYS = 3;
 const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro", "mint_business"]);
@@ -49,10 +50,18 @@ export async function POST(req: Request) {
     await client.query("BEGIN");
 
     const userRes = await client.query<{ id: string }>(
-      `INSERT INTO users (full_name, email, phone, password_hash, creci, account_status, lgpd_consent_at)
-       VALUES ($1, lower($2), $3, $4, $5, 'trialing', now())
+      `INSERT INTO users (full_name, email, phone, password_hash, creci, account_status, lgpd_consent_at, background_url, background_type)
+       VALUES ($1, lower($2), $3, $4, $5, 'trialing', now(), $6, $7)
        RETURNING id`,
-      [input.fullName.trim(), input.email, input.phone, passwordHash, input.creci ?? null]
+      [
+        input.fullName.trim(),
+        input.email,
+        input.phone,
+        passwordHash,
+        input.creci ?? null,
+        DEFAULT_DASHBOARD_BACKGROUND.url,
+        DEFAULT_DASHBOARD_BACKGROUND.type,
+      ]
     );
     const userId = userRes.rows[0].id;
 

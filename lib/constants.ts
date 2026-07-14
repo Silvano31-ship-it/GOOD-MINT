@@ -192,3 +192,11 @@ export const EMOJI_GROUPS: Record<string, string[]> = {
 /** Número oficial de suporte (WhatsApp), usado na tela de Suporte e no rodapé. */
 export const SUPPORT_WHATSAPP = "5592984906392";
 export const SUPPORT_PHONE_DISPLAY = "(92) 98490-6392";
+
+/** Fundo padrão do Dashboard pra quem se cadastra a partir de agora — o
+ * corretor pode trocar ou remover a qualquer momento em Configurações →
+ * Personalizar Fundo (não afeta quem já tinha conta antes disso). */
+export const DEFAULT_DASHBOARD_BACKGROUND = {
+  url: "https://iz7yywkibd3e0mov.public.blob.vercel-storage.com/dashboard-bg/bb5b4446-7638-44ec-b739-e052bd6c0cb5-1784067165530.mp4",
+  type: "video" as const,
+};
