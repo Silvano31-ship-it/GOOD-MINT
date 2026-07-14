@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthShell, Field } from "@/components/AuthShell";
 import { BrokerEmoji } from "@/components/BrokerEmoji";
+import { Footer } from "@/components/Footer";
 
 const PLAN_OPTIONS = [
   { code: "mint_start", name: "MINT Start", price: "R$ 19,90/mês", desc: "30 leads · 15 imóveis" },
@@ -25,6 +26,7 @@ function CadastroForm() {
     email: "",
     phone: "",
     password: "",
+    confirmPassword: "",
     creci: "",
     lgpdConsent: false,
     planCode: initialPlan,
@@ -39,6 +41,15 @@ function CadastroForm() {
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrors([]);
+
+    const clientErrors: string[] = [];
+    if (form.password.length < 8) clientErrors.push("A senha deve ter no mínimo 8 caracteres.");
+    if (form.password !== form.confirmPassword) clientErrors.push("As senhas não coincidem.");
+    if (clientErrors.length > 0) {
+      setErrors(clientErrors);
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/auth/register", {
@@ -96,7 +107,8 @@ function CadastroForm() {
       <Field label="Nome completo" required value={form.fullName} onChange={(e) => set("fullName", e.target.value)} />
       <Field label="E-mail" type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} />
       <Field label="Telefone / WhatsApp" placeholder="(11) 99999-9999" required value={form.phone} onChange={(e) => set("phone", e.target.value)} />
-      <Field label="Senha (mín. 8 caracteres)" type="password" required value={form.password} onChange={(e) => set("password", e.target.value)} />
+      <Field label="Senha (mín. 8 caracteres)" type="password" required minLength={8} value={form.password} onChange={(e) => set("password", e.target.value)} />
+      <Field label="Confirmar senha" type="password" required minLength={8} value={form.confirmPassword} onChange={(e) => set("confirmPassword", e.target.value)} />
       <Field label="CRECI (opcional)" value={form.creci} onChange={(e) => set("creci", e.target.value)} />
 
       <label className="flex items-start gap-2 text-sm text-gm-700/80">
@@ -133,23 +145,26 @@ function CadastroForm() {
 
 export default function CadastroPage() {
   return (
-    <AuthShell
-      animated
-      emoji={<BrokerEmoji />}
-      title="Comece seu teste grátis"
-      subtitle="3 dias grátis, sem cartão de crédito. Escolha um plano e comece agora."
-      footer={
-        <>
-          Já tem conta?{" "}
-          <Link href="/login" className="font-semibold text-gm-500 hover:underline">
-            Entrar
-          </Link>
-        </>
-      }
-    >
-      <Suspense fallback={<p className="text-sm text-gm-700/60">Carregando...</p>}>
-        <CadastroForm />
-      </Suspense>
-    </AuthShell>
+    <>
+      <AuthShell
+        animated
+        emoji={<BrokerEmoji />}
+        title="Comece seu teste grátis"
+        subtitle="3 dias grátis, sem cartão de crédito. Escolha um plano e comece agora."
+        footer={
+          <>
+            Já tem conta?{" "}
+            <Link href="/login" className="font-semibold text-gm-500 hover:underline">
+              Entrar
+            </Link>
+          </>
+        }
+      >
+        <Suspense fallback={<p className="text-sm text-gm-700/60">Carregando...</p>}>
+          <CadastroForm />
+        </Suspense>
+      </AuthShell>
+      <Footer />
+    </>
   );
 }

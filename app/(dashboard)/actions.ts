@@ -116,6 +116,74 @@ export async function addLeadInteraction(leadId: string, formData: FormData) {
   revalidatePath(`/leads/${leadId}`);
 }
 
+/** Edição inline na Planilha de Leads. Lista de colunas explícita — nunca um
+ * nome de coluna vindo do client, pra não abrir brecha de SQL injection. */
+export async function updateLeadField(leadId: string, field: string, value: string) {
+  const userId = await requireUserId();
+  const allowed = new Set(["name", "phone", "email", "origin"]);
+  if (!allowed.has(field)) return;
+  await db.query(`UPDATE leads SET ${field}=$1 WHERE id=$2 AND user_id=$3`, [
+    value || null,
+    leadId,
+    userId,
+  ]);
+  revalidatePath("/planilhas/leads");
+  revalidatePath(`/leads/${leadId}`);
+}
+
+// Wrappers finos com assinatura (id, valor) — passados direto como onSave das
+// células editáveis da planilha, sem precisar de closures inline no server component.
+export async function updateLeadName(id: string, value: string) { return updateLeadField(id, "name", value); }
+export async function updateLeadPhone(id: string, value: string) { return updateLeadField(id, "phone", value); }
+export async function updateLeadOrigin(id: string, value: string) { return updateLeadField(id, "origin", value); }
+export async function updateLeadStageField(id: string, toStage: string) { return bulkUpdateLeadStage([id], toStage); }
+
+export async function bulkDeleteLeads(ids: string[]) {
+  const userId = await requireUserId();
+  if (ids.length === 0) return;
+  await db.query(`UPDATE leads SET is_active=false WHERE id = ANY($1::uuid[]) AND user_id=$2`, [
+    ids,
+    userId,
+  ]);
+  revalidatePath("/planilhas/leads");
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+}
+
+export async function duplicateLeads(ids: string[]) {
+  const userId = await requireUserId();
+  if (ids.length === 0) return;
+  await db.query(
+    `INSERT INTO leads (user_id, name, phone, email, origin, notes, funnel_stage)
+     SELECT user_id, name || ' (cópia)', phone, email, origin, notes, 'novo_lead'
+     FROM leads WHERE id = ANY($1::uuid[]) AND user_id=$2`,
+    [ids, userId]
+  );
+  revalidatePath("/planilhas/leads");
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+}
+
+export async function bulkUpdateLeadStage(ids: string[], toStage: string) {
+  const userId = await requireUserId();
+  if (ids.length === 0) return;
+  const { rows } = await db.query<{ id: string; funnel_stage: string }>(
+    `SELECT id, funnel_stage FROM leads WHERE id = ANY($1::uuid[]) AND user_id=$2`,
+    [ids, userId]
+  );
+  for (const r of rows) {
+    if (r.funnel_stage === toStage) continue;
+    await db.query(`UPDATE leads SET funnel_stage=$1 WHERE id=$2`, [toStage, r.id]);
+    await db.query(
+      `INSERT INTO lead_stage_history (lead_id, from_stage, to_stage) VALUES ($1,$2,$3)`,
+      [r.id, r.funnel_stage, toStage]
+    );
+  }
+  revalidatePath("/planilhas/leads");
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+}
+
 // ---------------------------------------------------------------- IMÓVEIS
 export async function createProperty(formData: FormData) {
   const userId = await requireUserId();
@@ -177,6 +245,62 @@ export async function deactivateProperty(propertyId: string) {
   revalidatePath("/dashboard");
 }
 
+/** Edição inline na Planilha de Imóveis. Lista de colunas explícita. */
+export async function updatePropertyField(propertyId: string, field: string, value: string) {
+  const userId = await requireUserId();
+  const allowed = new Set(["address", "price_cents", "property_type", "status"]);
+  if (!allowed.has(field)) return;
+
+  if (field === "price_cents") {
+    const cents = Math.round(Number(value.replace(",", ".")) * 100);
+    if (isNaN(cents)) return;
+    await db.query(`UPDATE properties SET price_cents=$1 WHERE id=$2 AND user_id=$3`, [
+      cents,
+      propertyId,
+      userId,
+    ]);
+  } else {
+    await db.query(`UPDATE properties SET ${field}=$1 WHERE id=$2 AND user_id=$3`, [
+      value,
+      propertyId,
+      userId,
+    ]);
+  }
+  revalidatePath("/planilhas/imoveis");
+  revalidatePath("/imoveis");
+}
+
+export async function updatePropertyAddress(id: string, value: string) { return updatePropertyField(id, "address", value); }
+export async function updatePropertyPrice(id: string, value: string) { return updatePropertyField(id, "price_cents", value); }
+export async function updatePropertyType(id: string, value: string) { return updatePropertyField(id, "property_type", value); }
+export async function updatePropertyStatus(id: string, value: string) { return updatePropertyField(id, "status", value); }
+
+export async function bulkDeleteProperties(ids: string[]) {
+  const userId = await requireUserId();
+  if (ids.length === 0) return;
+  await db.query(
+    `UPDATE properties SET is_active=false, status='inativo' WHERE id = ANY($1::uuid[]) AND user_id=$2`,
+    [ids, userId]
+  );
+  revalidatePath("/planilhas/imoveis");
+  revalidatePath("/imoveis");
+  revalidatePath("/dashboard");
+}
+
+export async function duplicateProperties(ids: string[]) {
+  const userId = await requireUserId();
+  if (ids.length === 0) return;
+  await db.query(
+    `INSERT INTO properties (user_id, address, property_type, price_cents, area_m2, status, description)
+     SELECT user_id, address || ' (cópia)', property_type, price_cents, area_m2, 'disponivel', description
+     FROM properties WHERE id = ANY($1::uuid[]) AND user_id=$2`,
+    [ids, userId]
+  );
+  revalidatePath("/planilhas/imoveis");
+  revalidatePath("/imoveis");
+  revalidatePath("/dashboard");
+}
+
 // ---------------------------------------------------------------- NEGOCIAÇÕES
 export async function createNegotiation(formData: FormData) {
   const userId = await requireUserId();
@@ -226,6 +350,34 @@ export async function closeNegotiation(negotiationId: string, startPostSale: boo
   revalidatePath("/pos-venda");
   revalidatePath("/dashboard");
 }
+
+/** Edição inline na Planilha de Negociações. Lista de colunas explícita. */
+export async function updateNegotiationField(negotiationId: string, field: string, value: string) {
+  const userId = await requireUserId();
+  const allowed = new Set(["value_cents", "status"]);
+  if (!allowed.has(field)) return;
+
+  if (field === "value_cents") {
+    const cents = Math.round(Number(value.replace(",", ".")) * 100);
+    if (isNaN(cents)) return;
+    await db.query(`UPDATE negotiations SET value_cents=$1 WHERE id=$2 AND user_id=$3`, [
+      cents,
+      negotiationId,
+      userId,
+    ]);
+  } else {
+    await db.query(`UPDATE negotiations SET status=$1 WHERE id=$2 AND user_id=$3`, [
+      value,
+      negotiationId,
+      userId,
+    ]);
+  }
+  revalidatePath("/planilhas/negociacoes");
+  revalidatePath("/negociacoes");
+}
+
+export async function updateNegotiationValue(id: string, value: string) { return updateNegotiationField(id, "value_cents", value); }
+export async function updateNegotiationStatus(id: string, value: string) { return updateNegotiationField(id, "status", value); }
 
 // Ações de pós-venda (avançar/corrigir etapa, checklist, comunicação, kanban,
 // indicação) vivem em app/(dashboard)/pos-venda/actions.ts — arquivo próprio,

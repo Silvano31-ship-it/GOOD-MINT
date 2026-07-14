@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "./Logo";
 import { LogoutButton } from "./LogoutButton";
+import { ThemeToggle } from "./ThemeToggle";
 import { getInitials } from "@/lib/constants";
 
 const NAV = [
@@ -38,7 +39,7 @@ export function Sidebar({
   return (
     <>
       {/* Topbar mobile */}
-      <div className="flex items-center justify-between border-b border-gm-100 bg-white px-4 py-3 md:hidden">
+      <div className="flex items-center justify-between border-b border-gm-100 bg-gm-50 px-4 py-3 md:hidden">
         <Logo size={24} />
         <button
           onClick={() => setOpen((v) => !v)}
@@ -52,7 +53,7 @@ export function Sidebar({
       <aside
         className={`${
           open ? "block" : "hidden"
-        } border-b border-gm-100 bg-white md:sticky md:top-0 md:block md:h-screen md:w-64 md:flex-none md:border-b-0 md:border-r`}
+        } border-b border-gm-100 bg-gm-50 md:sticky md:top-0 md:block md:h-screen md:w-64 md:flex-none md:border-b-0 md:border-r`}
       >
         <div className="flex h-full flex-col p-4">
           <div className="hidden px-2 py-3 md:block">
@@ -87,6 +88,7 @@ export function Sidebar({
             <div className="truncate text-xs text-gm-700/50">{userName}</div>
           </div>
           <div className="pt-1">
+            <ThemeToggle className="w-full justify-start" />
             <LogoutButton
               label="↪ Sair"
               className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gm-700 hover:bg-gm-50"

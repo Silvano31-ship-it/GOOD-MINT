@@ -12,6 +12,21 @@ export const LEAD_STAGES = [
   { key: "perdido", label: "Perdido" },
 ] as const;
 
+/** Modelos de mensagem por etapa do funil — texto pronto pra editar antes de
+ * enviar pelo WhatsApp. Não é gerado por IA (deliberadamente simples, sem
+ * chamada a LLM, pra não depender de mais uma chave/custo por mensagem). */
+export const LEAD_MESSAGE_TEMPLATES: Record<string, string> = {
+  novo_lead: "Olá, {nome}! Tudo bem? Aqui é o(a) {corretor}, recebi seu contato e fico à disposição pra te ajudar a encontrar o imóvel ideal. Quando podemos conversar?",
+  contato_feito: "Oi, {nome}! Passando pra saber se ainda tem interesse em dar continuidade à nossa conversa sobre o imóvel. Posso te enviar mais opções?",
+  visita_agendada: "Olá, {nome}! Confirmando nossa visita ao imóvel. Qualquer imprevisto, me avise por aqui. Até lá!",
+  proposta: "Oi, {nome}! Como está a análise da proposta? Fico à disposição pra esclarecer qualquer dúvida e ajudar a fechar negócio.",
+  fechado: "Parabéns pelo negócio fechado, {nome}! 🎉 A partir de agora vou te acompanhar de perto até a entrega das chaves.",
+  perdido: "Oi, {nome}! Tudo bem? Se mudar de ideia ou surgir um novo momento, fico à disposição — sem compromisso.",
+};
+
+/** Meta semanal de novos leads pro card de gamificação leve do dashboard. */
+export const WEEKLY_LEAD_GOAL = 5;
+
 // Fluxo vigente (9 etapas). Os 4 valores legados do enum do banco
 // ('documentacao_enviada', 'analise_credito', 'aprovacao', 'registro_cartorio')
 // não aparecem mais aqui — processos antigos já foram remapeados pela

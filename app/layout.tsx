@@ -13,12 +13,23 @@ export const viewport: Viewport = {
   themeColor: "#0a2540",
 };
 
+// Lê o tema salvo antes da hidratação, pra não piscar claro→escuro ao carregar.
+const THEME_INIT_SCRIPT = `
+  try {
+    var t = localStorage.getItem("gm-theme");
+    if (t === "dark") document.documentElement.dataset.theme = "dark";
+  } catch (e) {}
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body className="min-h-screen bg-white text-gm-900 antialiased">{children}</body>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="min-h-screen bg-gm-50 text-gm-900 antialiased">{children}</body>
     </html>
   );
 }

@@ -348,3 +348,32 @@ export async function getPropertyOptions(userId: string) {
   );
   return rows;
 }
+
+export interface LeadFunnelMetrics {
+  funnel: { key: string; label: string; count: number }[];
+  conversionRate: number;
+}
+
+/** Funil de leads por etapa + taxa de conversão (fechados / total leads já
+ * cadastrados, incluindo inativos, pra dar a taxa histórica real). */
+export async function getLeadFunnelMetrics(userId: string): Promise<LeadFunnelMetrics> {
+  const { rows } = await db.query<{ funnel_stage: string; c: string }>(
+    `SELECT funnel_stage, count(*)::int AS c FROM leads WHERE user_id=$1 GROUP BY funnel_stage`,
+    [userId]
+  );
+  const byStage = Object.fromEntries(rows.map((r) => [r.funnel_stage, Number(r.c)]));
+  const funnel = LEAD_STAGES.map((s) => ({ key: s.key, label: s.label, count: byStage[s.key] ?? 0 }));
+  const total = funnel.reduce((sum, s) => sum + s.count, 0);
+  const closed = byStage["fechado"] ?? 0;
+  return { funnel, conversionRate: total ? Math.round((closed / total) * 1000) / 10 : 0 };
+}
+
+/** Progresso da meta semanal de novos leads (gamificação leve do dashboard). */
+export async function getWeeklyLeadGoalProgress(userId: string): Promise<number> {
+  const { rows } = await db.query<{ c: string }>(
+    `SELECT count(*)::int AS c FROM leads
+     WHERE user_id=$1 AND created_at >= date_trunc('week', now())`,
+    [userId]
+  );
+  return Number(rows[0]?.c ?? 0);
+}

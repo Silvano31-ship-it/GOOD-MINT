@@ -3,15 +3,21 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireActiveAccount } from "@/lib/account-guard";
-import { getCounts } from "@/lib/data";
+import { getCounts, getLeadFunnelMetrics, getWeeklyLeadGoalProgress } from "@/lib/data";
+import { WEEKLY_LEAD_GOAL } from "@/lib/constants";
 import { CrystalSphere } from "@/components/CrystalSphere";
 import { StatCard } from "@/components/ui";
 import { DashboardGreeting } from "@/components/DashboardGreeting";
+import { FunnelChart } from "@/components/pos-venda/FunnelChart";
 
 export default async function DashboardHome() {
   const user = await requireActiveAccount();
   if (!user.onboarding_done) redirect("/onboarding");
-  const counts = await getCounts(user.id);
+  const [counts, funnelMetrics, weeklyLeads] = await Promise.all([
+    getCounts(user.id),
+    getLeadFunnelMetrics(user.id),
+    getWeeklyLeadGoalProgress(user.id),
+  ]);
 
   const isEmpty =
     counts.leadsActive === 0 &&
@@ -44,6 +50,35 @@ export default async function DashboardHome() {
         <StatCard label="Imóveis" value={counts.properties} limit={counts.propertyLimit} icon="🏠" />
         <StatCard label="Negociações abertas" value={counts.negotiationsOpen} icon="🤝" />
         <StatCard label="Clientes em pós-venda" value={counts.postSaleActive} icon="📦" />
+      </section>
+
+      {/* Funil de leads + meta da semana */}
+      <section className="grid gap-4 lg:grid-cols-3">
+        <div className="gm-card p-5 lg:col-span-2">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="font-semibold text-gm-900">Funil de leads</h2>
+            <span className="rounded-full bg-gm-50 px-3 py-1 text-xs font-semibold text-gm-700">
+              Taxa de conversão: {funnelMetrics.conversionRate}%
+            </span>
+          </div>
+          <FunnelChart data={funnelMetrics.funnel} />
+        </div>
+
+        <div className="gm-card p-5">
+          <h2 className="mb-3 font-semibold text-gm-900">🎯 Meta da semana</h2>
+          <p className="text-sm text-gm-700/70">
+            Cadastre {WEEKLY_LEAD_GOAL} leads essa semana. Você já cadastrou {weeklyLeads}!
+          </p>
+          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gm-100">
+            <div
+              className="h-full rounded-full bg-gm-500 transition-all"
+              style={{ width: `${Math.min(100, Math.round((weeklyLeads / WEEKLY_LEAD_GOAL) * 100))}%` }}
+            />
+          </div>
+          {weeklyLeads >= WEEKLY_LEAD_GOAL && (
+            <p className="mt-2 text-xs font-medium text-green-600">Meta batida! 🎉</p>
+          )}
+        </div>
       </section>
 
       {/* Ações rápidas */}

@@ -6,7 +6,8 @@ import { getLead, LEAD_STAGES } from "@/lib/data";
 import { db } from "@/lib/db";
 import { updateLead, addLeadInteraction, updateLeadStage } from "@/app/(dashboard)/actions";
 import { Badge } from "@/components/ui";
-import { formatDateTime } from "@/lib/format";
+import { formatDateTime, formatDate } from "@/lib/format";
+import { LeadMessageTool } from "@/components/LeadMessageTool";
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
   const user = await requireActiveAccount();
@@ -22,6 +23,8 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
   const stageLabel = LEAD_STAGES.find((s) => s.key === lead.funnel_stage)?.label ?? lead.funnel_stage;
   const saveLead = updateLead.bind(null, lead.id);
   const addInteraction = addLeadInteraction.bind(null, lead.id);
+  const suggestedContactBase = lead.last_contact_at ? new Date(lead.last_contact_at) : new Date();
+  const suggestedContactDate = new Date(suggestedContactBase.getTime() + 3 * 86400000);
 
   return (
     <div>
@@ -65,6 +68,17 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
               ))}
             </div>
             <p className="mt-3 text-xs text-gm-700/50">Último contato: {formatDateTime(lead.last_contact_at)}</p>
+            <p className="mt-1 text-xs text-gm-700/50">Sugestão de próximo contato: {formatDate(suggestedContactDate)}</p>
+          </div>
+
+          <div className="gm-card p-5">
+            <h2 className="mb-3 font-semibold text-gm-900">Falar com o cliente</h2>
+            <LeadMessageTool
+              phone={lead.phone}
+              leadName={lead.name}
+              brokerName={user.full_name}
+              funnelStage={lead.funnel_stage}
+            />
           </div>
 
           <div className="gm-card p-5">

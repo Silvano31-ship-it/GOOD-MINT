@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AuthShell, Field } from "@/components/AuthShell";
 import { BrokerEmoji } from "@/components/BrokerEmoji";
+import { Footer } from "@/components/Footer";
 
 function LoginForm() {
   const router = useRouter();
@@ -75,22 +76,25 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <AuthShell
-      emoji={<BrokerEmoji />}
-      title="Entrar"
-      subtitle="Acesse sua conta GOOD MINT."
-      footer={
-        <>
-          Ainda não tem conta?{" "}
-          <Link href="/cadastro" className="font-semibold text-gm-500 hover:underline">
-            Comece o teste grátis
-          </Link>
-        </>
-      }
-    >
-      <Suspense fallback={<p className="text-sm text-gm-700/60">Carregando...</p>}>
-        <LoginForm />
-      </Suspense>
-    </AuthShell>
+    <>
+      <AuthShell
+        emoji={<BrokerEmoji />}
+        title="Entrar"
+        subtitle="Acesse sua conta GOOD MINT."
+        footer={
+          <>
+            Ainda não tem conta?{" "}
+            <Link href="/cadastro" className="font-semibold text-gm-500 hover:underline">
+              Comece o teste grátis
+            </Link>
+          </>
+        }
+      >
+        <Suspense fallback={<p className="text-sm text-gm-700/60">Carregando...</p>}>
+          <LoginForm />
+        </Suspense>
+      </AuthShell>
+      <Footer />
+    </>
   );
 }

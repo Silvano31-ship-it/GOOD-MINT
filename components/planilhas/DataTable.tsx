@@ -1,8 +1,22 @@
-// components/planilhas/DataTable.tsx — tabela simples com ordenação, busca e
-// export CSV (seção 7.1 da spec). Sem gráficos/widgets — só a tabela.
+// components/planilhas/DataTable.tsx — tabela com ordenação, busca, export CSV,
+// edição inline, seleção em massa e formatação condicional (Super Planilha).
+// Todas as props novas (editable, selectable, rowClassName, footerStats,
+// bulkActions) são opcionais — quem só usa busca/ordenação/CSV continua
+// funcionando sem mudar nada.
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+
+export interface EditableConfig<T> {
+  type: "text" | "number" | "select";
+  options?: { value: string; label: string }[];
+  /** Valor cru pra preencher o input ao entrar em modo de edição (padrão: String(row[key])). */
+  editValue?: (row: T) => string;
+  /** (id, novoValor) — assinatura compatível com server actions passadas
+   * diretamente (sem closures inline), ex.: updateLeadName. */
+  onSave: (id: string, value: string) => Promise<void>;
+}
 
 export interface Column<T> {
   key: string;
@@ -10,20 +24,125 @@ export interface Column<T> {
   render?: (row: T) => React.ReactNode;
   sortValue?: (row: T) => string | number;
   csvValue?: (row: T) => string;
+  editable?: EditableConfig<T>;
+}
+
+export interface BulkActions<T> {
+  onDelete?: (ids: string[]) => Promise<void>;
+  onDuplicate?: (ids: string[]) => Promise<void>;
+  stageOptions?: { value: string; label: string }[];
+  stageLabel?: string;
+  onChangeStage?: (ids: string[], stage: string) => Promise<void>;
+  /** Se true, mostra "Exportar selecionados" reaproveitando a lógica de CSV. */
+  exportSelected?: boolean;
+}
+
+function EditableCell<T>({
+  row,
+  column,
+  display,
+}: {
+  row: T;
+  column: Column<T>;
+  display: React.ReactNode;
+}) {
+  const router = useRouter();
+  const editable = column.editable!;
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save(nextValue: string) {
+    setSaving(true);
+    setError(null);
+    try {
+      await editable.onSave((row as any).id, nextValue);
+      setEditing(false);
+      router.refresh();
+    } catch {
+      setError("Não foi possível salvar.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (editable.type === "select") {
+    const current = editable.editValue ? editable.editValue(row) : String((row as any)[column.key] ?? "");
+    return (
+      <select
+        defaultValue={current}
+        disabled={saving}
+        onChange={(e) => save(e.target.value)}
+        className="min-h-9 rounded-lg border border-gm-200 bg-white px-2 py-1 text-sm outline-none focus:border-gm-500 disabled:opacity-60"
+      >
+        {editable.options?.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    );
+  }
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          setValue(editable.editValue ? editable.editValue(row) : String((row as any)[column.key] ?? ""));
+          setEditing(true);
+        }}
+        className="group flex min-h-9 items-center gap-1.5 rounded-lg px-1 text-left hover:bg-gm-50"
+        title="Editar"
+      >
+        {display}
+        <span className="text-xs text-gm-700/30 opacity-0 group-hover:opacity-100">✏️</span>
+      </button>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1">
+      <input
+        autoFocus
+        type={editable.type === "number" ? "number" : "text"}
+        value={value}
+        disabled={saving}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => save(value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") save(value);
+          if (e.key === "Escape") setEditing(false);
+        }}
+        className="min-h-9 w-32 rounded-lg border border-gm-500 px-2 py-1 text-sm outline-none"
+      />
+      {error && <span className="text-xs text-red-600">{error}</span>}
+    </span>
+  );
 }
 
 export function DataTable<T extends { id: string }>({
   rows,
   columns,
   filename,
+  selectable = false,
+  rowClassName,
+  footerStats,
+  bulkActions,
 }: {
   rows: T[];
   columns: Column<T>[];
   filename: string;
+  selectable?: boolean;
+  rowClassName?: (row: T) => string;
+  footerStats?: (rows: T[]) => { label: string; value: string }[];
+  bulkActions?: BulkActions<T>;
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<1 | -1>(1);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const filtered = useMemo(() => {
     if (!query.trim()) return rows;
@@ -58,9 +177,9 @@ export function DataTable<T extends { id: string }>({
     }
   }
 
-  function exportCsv() {
+  function csvFrom(list: T[], suffix = "") {
     const header = columns.map((c) => `"${c.label}"`).join(",");
-    const lines = sorted.map((r) =>
+    const lines = list.map((r) =>
       columns
         .map((c) => {
           const v = c.csvValue ? c.csvValue(r) : String((r as any)[c.key] ?? "");
@@ -73,10 +192,37 @@ export function DataTable<T extends { id: string }>({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${filename}.csv`;
+    a.download = `${filename}${suffix}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
+
+  function toggleRow(id: string) {
+    setSelected((s) => {
+      const next = new Set(s);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected((s) => (s.size === sorted.length ? new Set() : new Set(sorted.map((r) => r.id))));
+  }
+
+  async function runBulk(action: (ids: string[]) => Promise<void>) {
+    setBulkBusy(true);
+    try {
+      await action(Array.from(selected));
+      setSelected(new Set());
+      router.refresh();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  const selectedRows = sorted.filter((r) => selected.has(r.id));
+  const stats = footerStats?.(sorted);
 
   return (
     <div className="gm-card overflow-hidden">
@@ -88,7 +234,7 @@ export function DataTable<T extends { id: string }>({
           className="w-56 rounded-lg border border-gm-200 px-3 py-1.5 text-sm outline-none focus:border-gm-500"
         />
         <button
-          onClick={exportCsv}
+          onClick={() => csvFrom(sorted)}
           className="rounded-lg border border-gm-200 px-3 py-1.5 text-sm font-medium text-gm-700 hover:bg-gm-50"
         >
           ⬇ Exportar CSV
@@ -98,6 +244,17 @@ export function DataTable<T extends { id: string }>({
         <table className="w-full text-sm">
           <thead className="bg-gm-50 text-left text-xs uppercase text-gm-700/60">
             <tr>
+              {selectable && (
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={sorted.length > 0 && selected.size === sorted.length}
+                    onChange={toggleAll}
+                    aria-label="Selecionar todos"
+                    className="h-4 w-4"
+                  />
+                </th>
+              )}
               {columns.map((c) => (
                 <th
                   key={c.key}
@@ -111,17 +268,34 @@ export function DataTable<T extends { id: string }>({
           </thead>
           <tbody>
             {sorted.map((row) => (
-              <tr key={row.id} className="border-t border-gm-50 hover:bg-gm-50/50">
-                {columns.map((c) => (
-                  <td key={c.key} className="whitespace-nowrap px-4 py-2.5 text-gm-900">
-                    {c.render ? c.render(row) : String((row as any)[c.key] ?? "—")}
+              <tr
+                key={row.id}
+                className={`border-t border-gm-50 hover:bg-gm-50/50 ${rowClassName?.(row) ?? ""}`}
+              >
+                {selectable && (
+                  <td className="px-4 py-2.5">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(row.id)}
+                      onChange={() => toggleRow(row.id)}
+                      aria-label="Selecionar linha"
+                      className="h-4 w-4"
+                    />
                   </td>
-                ))}
+                )}
+                {columns.map((c) => {
+                  const display = c.render ? c.render(row) : String((row as any)[c.key] ?? "—");
+                  return (
+                    <td key={c.key} className="whitespace-nowrap px-4 py-2.5 text-gm-900">
+                      {c.editable ? <EditableCell row={row} column={c} display={display} /> : display}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-4 py-10 text-center text-gm-700/40">
+                <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-4 py-10 text-center text-gm-700/40">
                   Nenhum registro encontrado.
                 </td>
               </tr>
@@ -129,6 +303,70 @@ export function DataTable<T extends { id: string }>({
           </tbody>
         </table>
       </div>
+
+      {stats && stats.length > 0 && (
+        <div className="flex flex-wrap gap-6 border-t border-gm-50 bg-gm-50/60 px-4 py-3 text-xs text-gm-700">
+          {stats.map((s) => (
+            <div key={s.label}>
+              <span className="text-gm-700/50">{s.label}: </span>
+              <span className="font-semibold text-gm-900">{s.value}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {selectable && selected.size > 0 && bulkActions && (
+        <div className="sticky bottom-0 flex flex-wrap items-center gap-2 border-t border-gm-100 bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(10,37,64,0.06)]">
+          <span className="text-xs font-medium text-gm-700">{selected.size} selecionado(s)</span>
+          {bulkActions.exportSelected && (
+            <button
+              disabled={bulkBusy}
+              onClick={() => csvFrom(selectedRows, "-selecionados")}
+              className="min-h-9 rounded-lg border border-gm-200 px-3 py-1.5 text-xs font-medium text-gm-700 hover:bg-gm-50 disabled:opacity-60"
+            >
+              📤 Exportar selecionados
+            </button>
+          )}
+          {bulkActions.onDuplicate && (
+            <button
+              disabled={bulkBusy}
+              onClick={() => runBulk(bulkActions.onDuplicate!)}
+              className="min-h-9 rounded-lg border border-gm-200 px-3 py-1.5 text-xs font-medium text-gm-700 hover:bg-gm-50 disabled:opacity-60"
+            >
+              📋 Duplicar
+            </button>
+          )}
+          {bulkActions.onChangeStage && bulkActions.stageOptions && (
+            <select
+              disabled={bulkBusy}
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) runBulk((ids) => bulkActions.onChangeStage!(ids, e.target.value));
+                e.target.value = "";
+              }}
+              className="min-h-9 rounded-lg border border-gm-200 px-2 py-1.5 text-xs disabled:opacity-60"
+            >
+              <option value="" disabled>🚀 {bulkActions.stageLabel ?? "Mover etapa"}...</option>
+              {bulkActions.stageOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          )}
+          {bulkActions.onDelete && (
+            <button
+              disabled={bulkBusy}
+              onClick={() => {
+                if (confirm(`Excluir ${selected.size} registro(s)? Essa ação não pode ser desfeita.`)) {
+                  runBulk(bulkActions.onDelete!);
+                }
+              }}
+              className="min-h-9 rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-60"
+            >
+              🗑️ Excluir
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
