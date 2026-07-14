@@ -9,8 +9,10 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { createCustomer, createCreditCardSubscription } from "@/lib/asaas";
 import { onlyDigits, isoDatePlusDays } from "@/lib/format";
+import { PLAN_PRICING } from "@/lib/constants";
 
 const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro", "mint_business"]);
+const VALID_BILLING_CYCLES = new Set(["monthly", "yearly"]);
 
 export async function POST(req: Request) {
   const session = await getSession();
@@ -26,6 +28,7 @@ export async function POST(req: Request) {
     postalCode?: string;
     addressNumber?: string;
     planCode?: string;
+    billingCycle?: string;
   };
   try {
     body = await req.json();
@@ -34,6 +37,7 @@ export async function POST(req: Request) {
   }
 
   const { holderName, number, expiryMonth, expiryYear, ccv, cpfCnpj, postalCode, addressNumber, planCode } = body;
+  const billingCycle = VALID_BILLING_CYCLES.has(body.billingCycle ?? "") ? body.billingCycle! : "monthly";
   if (!holderName || !number || !expiryMonth || !expiryYear || !ccv || !cpfCnpj || !postalCode || !addressNumber) {
     return NextResponse.json({ error: "Preencha todos os campos do cartão." }, { status: 422 });
   }
@@ -61,14 +65,18 @@ export async function POST(req: Request) {
       [planCode, subscription.id]
     );
   }
+  await db.query(`UPDATE subscriptions SET billing_cycle = $1 WHERE id = $2`, [billingCycle, subscription.id]);
 
-  const { rows: planRows } = await db.query<{ name: string; price_cents: number }>(
-    `SELECT p.name, p.price_cents FROM subscriptions s
+  const { rows: planRows } = await db.query<{ code: string; name: string; price_cents: number }>(
+    `SELECT p.code, p.name, p.price_cents FROM subscriptions s
      JOIN plans p ON p.id = s.plan_id WHERE s.id = $1`,
     [subscription.id]
   );
   const plan = planRows[0];
   if (!plan) return NextResponse.json({ error: "Plano não encontrado." }, { status: 404 });
+
+  const priceCents =
+    PLAN_PRICING[plan.code]?.[billingCycle === "yearly" ? "yearlyCents" : "monthlyCents"] ?? plan.price_cents;
 
   const remoteIp =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "127.0.0.1";
@@ -92,9 +100,10 @@ export async function POST(req: Request) {
 
     const asaasSub = await createCreditCardSubscription({
       customer: customer.id,
-      value: plan.price_cents / 100,
+      value: priceCents / 100,
       nextDueDate,
-      description: `GOOD MINT — Plano ${plan.name}`,
+      description: `GOOD MINT — Plano ${plan.name} (${billingCycle === "yearly" ? "anual" : "mensal"})`,
+      cycle: billingCycle === "yearly" ? "YEARLY" : "MONTHLY",
       creditCard: { holderName, number, expiryMonth, expiryYear, ccv },
       holderInfo: {
         name: holderName,

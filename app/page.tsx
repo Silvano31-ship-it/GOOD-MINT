@@ -9,6 +9,8 @@ import { Logo } from "@/components/Logo";
 import { CrystalSphere } from "@/components/CrystalSphere";
 import { FloatingEmojis } from "@/components/FloatingEmojis";
 import { Footer } from "@/components/Footer";
+import { PLAN_PRICING, type BillingCycle } from "@/lib/constants";
+import { formatBRL } from "@/lib/format";
 
 type Lang = "pt" | "en";
 
@@ -54,12 +56,21 @@ const STRINGS = {
       solutionTitle: "Pré-venda e pós-venda, sempre atualizados",
       solutionBody: "Cada mudança de etapa dispara um aviso automático pro cliente. Documentação enviada, análise de crédito, aprovação, assinatura, registro, entrega das chaves — tudo acompanhado, sem esforço manual do corretor.",
     },
+    impact: {
+      title: 'Chega de cliente no seu WhatsApp perguntando "cadê meu processo?"',
+      body: "Com a GOOD MINT, ele é avisado automaticamente a cada etapa. Você para de apagar incêndios e volta a vender.",
+      badges: ["✅ Cliente informado", "🕒 Zero esforço", "🚀 Foco em vendas"],
+    },
     plans: {
       title: "Planos e preços",
       subtitle: "Comece grátis por 3 dias, sem cartão. Escolha o plano quando quiser.",
       perMonth: "/mês",
+      perYear: "/ano",
+      monthlyLabel: "Mensal",
+      annualLabel: "Anual (economize 20%)",
       mostPopular: "⭐ Mais popular",
       cta: "Começar teste grátis",
+      footerNote: "Teste grátis de 3 dias. Cancele quando quiser.",
       names: { mint_start: "MINT Start", mint_pro: "MINT Pro", mint_business: "MINT Business" },
       features: {
         mint_start: ["30 leads ativos", "15 imóveis cadastrados", "Clientes em pós-venda ilimitados", "Central de Mensagens com bot de IA", "Planilhas e exportação"],
@@ -117,12 +128,21 @@ const STRINGS = {
       solutionTitle: "Pre-sale and after-sale, always up to date",
       solutionBody: "Every stage change triggers an automatic update to the client. Documents sent, credit analysis, approval, signing, registration, key handover — all tracked, with zero manual effort from the agent.",
     },
+    impact: {
+      title: 'No more clients messaging you asking "what\'s the status of my deal?"',
+      body: "With GOOD MINT, they're notified automatically at every step. You stop putting out fires and get back to selling.",
+      badges: ["✅ Client informed", "🕒 Zero effort", "🚀 Focus on selling"],
+    },
     plans: {
       title: "Plans and pricing",
       subtitle: "Start free for 3 days, no card required. Choose a plan whenever you want.",
       perMonth: "/mo",
+      perYear: "/yr",
+      monthlyLabel: "Monthly",
+      annualLabel: "Annual (save 20%)",
       mostPopular: "⭐ Most popular",
       cta: "Start free trial",
+      footerNote: "3-day free trial. Cancel anytime.",
       names: { mint_start: "MINT Start", mint_pro: "MINT Pro", mint_business: "MINT Business" },
       features: {
         mint_start: ["30 active leads", "15 listed properties", "Unlimited after-sale clients", "AI-powered messaging hub", "Spreadsheets and export"],
@@ -142,11 +162,6 @@ const STRINGS = {
 } as const;
 
 const PLAN_CODES = ["mint_start", "mint_pro", "mint_business"] as const;
-const PLAN_PRICES: Record<(typeof PLAN_CODES)[number], string> = {
-  mint_start: "R$ 19,90",
-  mint_pro: "R$ 49,90",
-  mint_business: "R$ 80,00",
-};
 const PLAN_HIGHLIGHT: Record<(typeof PLAN_CODES)[number], boolean> = {
   mint_start: false,
   mint_pro: true,
@@ -178,6 +193,7 @@ function Step({ n, text }: { n: number; text: string }) {
 
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("pt");
+  const [isAnnual, setIsAnnual] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("gm-lang");
@@ -315,48 +331,86 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Bloco de impacto */}
+      <section className="mx-auto max-w-4xl px-5 pt-16">
+        <div className="rounded-2xl bg-gradient-to-b from-gm-50 to-white p-8 text-center shadow-lg">
+          <h2 className="text-xl font-bold text-gm-900 sm:text-2xl">{s.impact.title}</h2>
+          <p className="mt-3 text-sm text-gm-700/70 sm:text-base">{s.impact.body}</p>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            {s.impact.badges.map((b) => (
+              <span key={b} className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-gm-700 shadow-sm">
+                {b}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Planos */}
       <section id="plano" className="gm-radial">
         <div className="mx-auto max-w-6xl px-5 py-16">
           <h2 className="text-center text-3xl font-bold text-white">{s.plans.title}</h2>
           <p className="mt-2 text-center text-white/70">{s.plans.subtitle}</p>
-          <div className="mx-auto mt-10 grid max-w-5xl gap-6 md:grid-cols-3">
-            {PLAN_CODES.map((code) => (
-              <div
-                key={code}
-                className={`relative rounded-2xl bg-white p-7 shadow-2xl ${
-                  PLAN_HIGHLIGHT[code] ? "ring-2 ring-gm-300 md:-translate-y-3" : ""
-                }`}
-              >
-                {PLAN_HIGHLIGHT[code] && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gm-500 px-3 py-1 text-xs font-semibold text-white">
-                    {s.plans.mostPopular}
-                  </span>
-                )}
-                <div className="text-sm font-semibold uppercase tracking-wide text-gm-500">
-                  {s.plans.names[code]}
-                </div>
-                <div className="mt-2 flex items-end gap-1">
-                  <span className="text-3xl font-bold text-gm-900">{PLAN_PRICES[code]}</span>
-                  <span className="pb-1 text-sm text-gm-700/60">{s.plans.perMonth}</span>
-                </div>
-                <ul className="mt-5 space-y-2 text-sm text-gm-700">
-                  {s.plans.features[code].map((f) => (
-                    <li key={f}>✓ {f}</li>
-                  ))}
-                </ul>
-                <Link
-                  href={`/cadastro?plano=${code}`}
-                  className={`mt-6 block rounded-xl py-3 text-center font-semibold ${
-                    PLAN_HIGHLIGHT[code]
-                      ? "bg-gm-500 text-white hover:bg-gm-600"
-                      : "bg-gm-50 text-gm-700 hover:bg-gm-100"
+
+          <div className="mt-8 flex items-center justify-center gap-3">
+            <span className={`text-sm font-medium transition-all duration-300 ${!isAnnual ? "text-white" : "text-white/50"}`}>
+              {s.plans.monthlyLabel}
+            </span>
+            <button
+              onClick={() => setIsAnnual((v) => !v)}
+              aria-label="Alternar cobrança mensal ou anual"
+              className={`relative h-7 w-14 flex-none rounded-full transition-all duration-300 ${isAnnual ? "bg-gm-300" : "bg-white/20"}`}
+            >
+              <span
+                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all duration-300 ${isAnnual ? "left-8" : "left-1"}`}
+              />
+            </button>
+            <span className={`text-sm font-medium transition-all duration-300 ${isAnnual ? "text-white" : "text-white/50"}`}>
+              {s.plans.annualLabel}
+            </span>
+          </div>
+
+          <div className="mx-auto mt-10 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {PLAN_CODES.map((code) => {
+              const cents = isAnnual ? PLAN_PRICING[code].yearlyCents : PLAN_PRICING[code].monthlyCents;
+              return (
+                <div
+                  key={code}
+                  className={`relative min-w-[320px] rounded-2xl bg-white p-8 shadow-2xl transition-all duration-300 ${
+                    PLAN_HIGHLIGHT[code] ? "border-2 border-blue-500 shadow-blue-200/50 md:-translate-y-3" : ""
                   }`}
                 >
-                  {s.plans.cta}
-                </Link>
-              </div>
-            ))}
+                  {PLAN_HIGHLIGHT[code] && (
+                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gm-500 px-3 py-1 text-xs font-semibold text-white">
+                      {s.plans.mostPopular}
+                    </span>
+                  )}
+                  <div className="text-sm font-semibold uppercase tracking-wide text-gm-500">
+                    {s.plans.names[code]}
+                  </div>
+                  <div className="mt-2 flex items-end gap-1">
+                    <span className="text-4xl font-bold text-gm-900">{formatBRL(cents)}</span>
+                    <span className="pb-1 text-sm text-gm-700/60">{isAnnual ? s.plans.perYear : s.plans.perMonth}</span>
+                  </div>
+                  <ul className="mt-5 space-y-2 text-sm text-gm-700">
+                    {s.plans.features[code].map((f) => (
+                      <li key={f}>✅ {f}</li>
+                    ))}
+                  </ul>
+                  <Link
+                    href={`/cadastro?plano=${code}&billing=${isAnnual ? "yearly" : "monthly"}`}
+                    className={`mt-6 block rounded-xl py-3 text-center font-semibold transition-all duration-300 ${
+                      PLAN_HIGHLIGHT[code]
+                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                        : "bg-gm-50 text-gm-700 hover:bg-gm-100"
+                    }`}
+                  >
+                    {s.plans.cta}
+                  </Link>
+                  <p className="mt-3 text-center text-xs text-gm-700/50">{s.plans.footerNote}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>

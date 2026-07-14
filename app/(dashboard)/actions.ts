@@ -8,8 +8,8 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { onlyDigits } from "@/lib/format";
-import { cancelSubscription as cancelAsaasSubscription } from "@/lib/asaas";
-import { SUPPORT_WHATSAPP } from "@/lib/constants";
+import { cancelSubscription as cancelAsaasSubscription, updateSubscriptionPlan } from "@/lib/asaas";
+import { SUPPORT_WHATSAPP, PLAN_PRICING } from "@/lib/constants";
 import { buildOAuthUrl, publishFacebookPost, publishInstagramPost } from "@/lib/meta";
 import { publishTiktokPost } from "@/lib/tiktok";
 
@@ -474,6 +474,46 @@ export async function cancelMySubscription() {
     }
   }
   await db.query(`UPDATE subscriptions SET canceled_at=now(), status='canceled' WHERE id=$1`, [sub.id]);
+  revalidatePath("/configuracoes/plano");
+}
+
+const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro", "mint_business"]);
+const VALID_BILLING_CYCLES = new Set(["monthly", "yearly"]);
+
+/** Troca de plano e/ou ciclo de cobrança pra quem já tem cartão ativo (fluxo
+ * diferente de `cancelMySubscription`/`SubscribeForm`, que são pra antes de ter
+ * cartão). Atualiza o valor cobrado direto na assinatura do Asaas. */
+export async function changePlanAndCycle(planCode: string, billingCycle: string) {
+  const userId = await requireUserId();
+  if (!VALID_PLAN_CODES.has(planCode) || !VALID_BILLING_CYCLES.has(billingCycle)) return;
+
+  const { rows } = await db.query<{ id: string; gateway_subscription_id: string | null }>(
+    `SELECT id, gateway_subscription_id FROM subscriptions
+     WHERE user_id=$1 AND canceled_at IS NULL ORDER BY created_at DESC LIMIT 1`,
+    [userId]
+  );
+  const sub = rows[0];
+  if (!sub) return;
+
+  const pricing = PLAN_PRICING[planCode];
+  const cents = billingCycle === "yearly" ? pricing.yearlyCents : pricing.monthlyCents;
+
+  if (sub.gateway_subscription_id) {
+    try {
+      await updateSubscriptionPlan(sub.gateway_subscription_id, {
+        value: cents / 100,
+        cycle: billingCycle === "yearly" ? "YEARLY" : "MONTHLY",
+      });
+    } catch (err) {
+      console.error("Erro ao atualizar plano no Asaas:", err);
+      return;
+    }
+  }
+
+  await db.query(
+    `UPDATE subscriptions SET plan_id = (SELECT id FROM plans WHERE code=$1), billing_cycle=$2 WHERE id=$3`,
+    [planCode, billingCycle, sub.id]
+  );
   revalidatePath("/configuracoes/plano");
 }
 

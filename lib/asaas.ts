@@ -104,6 +104,7 @@ export async function createCreditCardSubscription(input: {
   value: number; // em reais (ex: 19.9)
   nextDueDate: string; // YYYY-MM-DD
   description: string;
+  cycle?: "MONTHLY" | "YEARLY"; // default MONTHLY, mantém compatibilidade com chamadas antigas
   creditCard: CreditCardInput;
   holderInfo: CardHolderInfo;
   remoteIp: string;
@@ -113,7 +114,7 @@ export async function createCreditCardSubscription(input: {
     body: {
       customer: input.customer,
       billingType: "CREDIT_CARD",
-      cycle: "MONTHLY",
+      cycle: input.cycle ?? "MONTHLY",
       value: input.value,
       nextDueDate: input.nextDueDate,
       description: input.description,
@@ -144,6 +145,18 @@ export async function getSubscription(id: string): Promise<AsaasSubscription> {
 export async function cancelSubscription(id: string): Promise<{ deleted: boolean }> {
   return asaasFetch<{ deleted: boolean }>(`/subscriptions/${id}`, {
     method: "DELETE",
+  });
+}
+
+/** Troca o valor/ciclo cobrado numa assinatura já existente (upgrade/downgrade de
+ * plano ou mudança de mensal↔anual). Não mexe em cartão nem em cliente. */
+export async function updateSubscriptionPlan(
+  id: string,
+  input: { value: number; cycle: "MONTHLY" | "YEARLY" }
+): Promise<AsaasSubscription> {
+  return asaasFetch<AsaasSubscription>(`/subscriptions/${id}`, {
+    method: "PUT",
+    body: { value: input.value, cycle: input.cycle },
   });
 }
 

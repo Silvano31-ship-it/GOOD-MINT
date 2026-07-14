@@ -2,11 +2,14 @@
 import Link from "next/link";
 import { requireActiveAccount, trialDaysLeft } from "@/lib/account-guard";
 import { db } from "@/lib/db";
+import { getCounts } from "@/lib/data";
 import { listSubscriptionPayments } from "@/lib/asaas";
 import { cancelMySubscription } from "@/app/(dashboard)/actions";
 import { PageHeader, Badge } from "@/components/ui";
 import { formatBRL, formatDate } from "@/lib/format";
 import { SubscribeForm } from "@/components/configuracoes/SubscribeForm";
+import { ChangePlanForm } from "@/components/configuracoes/ChangePlanForm";
+import { PLAN_PRICING, type BillingCycle } from "@/lib/constants";
 
 const STATUS_LABELS: Record<string, string> = {
   trialing: "Em teste grátis", active: "Ativa", past_due: "Pagamento pendente",
@@ -17,20 +20,29 @@ export default async function PlanoPage() {
   const user = await requireActiveAccount();
   const daysLeft = trialDaysLeft(user);
 
-  const { rows } = await db.query<{
-    id: string; status: string; gateway_subscription_id: string | null;
-    current_period_end: string | null; card_last4: string | null; card_brand: string | null;
-    trial_ends_at: string; plan_code: string; plan_name: string; plan_price_cents: number;
-  }>(
-    `SELECT s.id, s.status, s.gateway_subscription_id, s.current_period_end,
-            s.card_last4, s.card_brand, s.trial_ends_at,
-            p.code AS plan_code, p.name AS plan_name, p.price_cents AS plan_price_cents
-     FROM subscriptions s
-     JOIN plans p ON p.id = s.plan_id
-     WHERE s.user_id=$1 ORDER BY s.created_at DESC LIMIT 1`,
-    [user.id]
-  );
+  const [{ rows }, counts] = await Promise.all([
+    db.query<{
+      id: string; status: string; gateway_subscription_id: string | null;
+      current_period_end: string | null; card_last4: string | null; card_brand: string | null;
+      trial_ends_at: string; plan_code: string; plan_name: string; plan_price_cents: number;
+      billing_cycle: BillingCycle;
+    }>(
+      `SELECT s.id, s.status, s.gateway_subscription_id, s.current_period_end,
+              s.card_last4, s.card_brand, s.trial_ends_at, s.billing_cycle,
+              p.code AS plan_code, p.name AS plan_name, p.price_cents AS plan_price_cents
+       FROM subscriptions s
+       JOIN plans p ON p.id = s.plan_id
+       WHERE s.user_id=$1 ORDER BY s.created_at DESC LIMIT 1`,
+      [user.id]
+    ),
+    getCounts(user.id),
+  ]);
   const subscription = rows[0];
+  const displayCents = subscription
+    ? subscription.billing_cycle === "yearly"
+      ? PLAN_PRICING[subscription.plan_code]?.yearlyCents ?? subscription.plan_price_cents
+      : PLAN_PRICING[subscription.plan_code]?.monthlyCents ?? subscription.plan_price_cents
+    : null;
 
   let payments: Awaited<ReturnType<typeof listSubscriptionPayments>> = [];
   if (subscription?.gateway_subscription_id) {
@@ -56,8 +68,10 @@ export default async function PlanoPage() {
                 {subscription?.plan_name ?? "—"}
               </div>
               <div className="mt-1 text-2xl font-bold text-gm-900">
-                {formatBRL(subscription?.plan_price_cents)}{" "}
-                <span className="text-sm font-normal text-gm-700/60">/mês</span>
+                {formatBRL(displayCents)}{" "}
+                <span className="text-sm font-normal text-gm-700/60">
+                  {subscription?.billing_cycle === "yearly" ? "/ano" : "/mês"}
+                </span>
               </div>
             </div>
             {subscription && <Badge value={subscription.status} label={STATUS_LABELS[subscription.status] ?? subscription.status} />}
@@ -75,15 +89,23 @@ export default async function PlanoPage() {
             </p>
           )}
 
+          <div className="mt-5 space-y-3 border-t border-gm-100 pt-5">
+            <UsageBar label="Leads" value={counts.leadsActive} limit={counts.leadLimit} />
+            <UsageBar label="Imóveis" value={counts.properties} limit={counts.propertyLimit} />
+          </div>
+
           {subscription && subscription.status !== "canceled" && hasCard && (
-            <form action={cancelMySubscription} className="mt-6">
-              <button className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">
-                Cancelar assinatura
-              </button>
-              <p className="mt-2 text-xs text-gm-700/50">
-                O cancelamento é imediato e sem multa. Seu acesso permanece até o fim do período já pago.
-              </p>
-            </form>
+            <>
+              <ChangePlanForm currentPlanCode={subscription.plan_code} currentBillingCycle={subscription.billing_cycle} />
+              <form action={cancelMySubscription} className="mt-6">
+                <button className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">
+                  Cancelar assinatura
+                </button>
+                <p className="mt-2 text-xs text-gm-700/50">
+                  O cancelamento é imediato e sem multa. Seu acesso permanece até o fim do período já pago.
+                </p>
+              </form>
+            </>
           )}
 
           {subscription?.status === "canceled" && (
@@ -97,7 +119,7 @@ export default async function PlanoPage() {
                 Você ainda não tem um cartão cadastrado. Escolha um plano e assine
                 quando quiser — sem cobrança durante o teste grátis.
               </p>
-              <SubscribeForm currentPlanCode={subscription.plan_code} />
+              <SubscribeForm currentPlanCode={subscription.plan_code} currentBillingCycle={subscription.billing_cycle} />
             </div>
           )}
         </div>
@@ -122,6 +144,29 @@ export default async function PlanoPage() {
             </ul>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function UsageBar({ label, value, limit }: { label: string; value: number; limit: number | null }) {
+  if (limit == null) {
+    return (
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gm-700/70">{label}</span>
+        <span className="font-medium text-gm-900">Ilimitados ✅</span>
+      </div>
+    );
+  }
+  const pct = Math.min(100, Math.round((value / limit) * 100));
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-gm-700/70">{label}</span>
+        <span className="font-medium text-gm-900">{value}/{limit}</span>
+      </div>
+      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gm-100">
+        <div className={`h-full rounded-full ${pct >= 100 ? "bg-red-500" : "bg-gm-500"}`} style={{ width: `${pct}%` }} />
       </div>
     </div>
   );

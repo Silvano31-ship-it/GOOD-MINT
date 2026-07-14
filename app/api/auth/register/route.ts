@@ -16,9 +16,10 @@ import { createSession } from "@/lib/session";
 
 const TRIAL_DAYS = 3;
 const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro", "mint_business"]);
+const VALID_BILLING_CYCLES = new Set(["monthly", "yearly"]);
 
 export async function POST(req: Request) {
-  let input: RegisterInput & { planCode?: string };
+  let input: RegisterInput & { planCode?: string; billingCycle?: string };
   try {
     input = await req.json();
   } catch {
@@ -31,6 +32,7 @@ export async function POST(req: Request) {
   }
 
   const planCode = VALID_PLAN_CODES.has(input.planCode ?? "") ? input.planCode! : "mint_start";
+  const billingCycle = VALID_BILLING_CYCLES.has(input.billingCycle ?? "") ? input.billingCycle! : "monthly";
 
   const existing = await findUserByEmail(input.email);
   if (existing) {
@@ -55,11 +57,11 @@ export async function POST(req: Request) {
     const userId = userRes.rows[0].id;
 
     const planRes = await client.query<{ id: string }>(
-      `INSERT INTO subscriptions (user_id, plan_id, status, trial_ends_at)
-       SELECT $1, id, 'trialing', now() + interval '${TRIAL_DAYS} days'
+      `INSERT INTO subscriptions (user_id, plan_id, status, trial_ends_at, billing_cycle)
+       SELECT $1, id, 'trialing', now() + interval '${TRIAL_DAYS} days', $3
        FROM plans WHERE code = $2
        RETURNING id`,
-      [userId, planCode]
+      [userId, planCode, billingCycle]
     );
     if (planRes.rowCount === 0) {
       throw new Error(`Plano '${planCode}' não encontrado`);

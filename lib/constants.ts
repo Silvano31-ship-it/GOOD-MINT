@@ -27,6 +27,17 @@ export const LEAD_MESSAGE_TEMPLATES: Record<string, string> = {
 /** Meta semanal de novos leads pro card de gamificação leve do dashboard. */
 export const WEEKLY_LEAD_GOAL = 5;
 
+/** Preço mensal e anual (20% de desconto) por plano, em centavos — fonte única
+ * usada pela landing, cadastro e formulários de assinatura/troca de plano.
+ * O valor mensal aqui precisa ficar igual ao `price_cents` de `plans` no banco. */
+export const PLAN_PRICING: Record<string, { monthlyCents: number; yearlyCents: number }> = {
+  mint_start: { monthlyCents: 1990, yearlyCents: 19000 },
+  mint_pro: { monthlyCents: 4990, yearlyCents: 47900 },
+  mint_business: { monthlyCents: 8000, yearlyCents: 76800 },
+};
+
+export type BillingCycle = "monthly" | "yearly";
+
 // Fluxo vigente (9 etapas). Os 4 valores legados do enum do banco
 // ('documentacao_enviada', 'analise_credito', 'aprovacao', 'registro_cartorio')
 // não aparecem mais aqui — processos antigos já foram remapeados pela

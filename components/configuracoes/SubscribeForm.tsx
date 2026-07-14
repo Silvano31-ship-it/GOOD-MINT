@@ -7,16 +7,25 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/AuthShell";
+import { PLAN_PRICING, type BillingCycle } from "@/lib/constants";
+import { formatBRL } from "@/lib/format";
 
 const PLAN_OPTIONS = [
-  { code: "mint_start", name: "MINT Start", price: "R$ 19,90/mês", desc: "30 leads · 15 imóveis" },
-  { code: "mint_pro", name: "MINT Pro", price: "R$ 49,90/mês", desc: "Leads e imóveis ilimitados" },
-  { code: "mint_business", name: "MINT Business", price: "R$ 80,00/mês", desc: "Tudo ilimitado" },
+  { code: "mint_start", name: "MINT Start", desc: "30 leads · 15 imóveis" },
+  { code: "mint_pro", name: "MINT Pro", desc: "Leads e imóveis ilimitados" },
+  { code: "mint_business", name: "MINT Business", desc: "Tudo ilimitado" },
 ];
 
-export function SubscribeForm({ currentPlanCode }: { currentPlanCode: string }) {
+export function SubscribeForm({
+  currentPlanCode,
+  currentBillingCycle = "monthly",
+}: {
+  currentPlanCode: string;
+  currentBillingCycle?: BillingCycle;
+}) {
   const router = useRouter();
   const [planCode, setPlanCode] = useState(currentPlanCode);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>(currentBillingCycle);
   const [form, setForm] = useState({
     holderName: "",
     number: "",
@@ -42,7 +51,7 @@ export function SubscribeForm({ currentPlanCode }: { currentPlanCode: string }) 
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, planCode }),
+        body: JSON.stringify({ ...form, planCode, billingCycle }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -60,34 +69,57 @@ export function SubscribeForm({ currentPlanCode }: { currentPlanCode: string }) 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
-        <span className="mb-2 block text-sm font-medium text-gm-900">Escolha seu plano</span>
-        <div className="grid grid-cols-1 gap-2">
-          {PLAN_OPTIONS.map((p) => (
-            <label
-              key={p.code}
-              className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition ${
-                planCode === p.code
-                  ? "border-gm-500 bg-gm-50 ring-1 ring-gm-500"
-                  : "border-gm-200 hover:border-gm-300"
-              }`}
+        <div className="mb-2 flex items-center justify-between">
+          <span className="block text-sm font-medium text-gm-900">Escolha seu plano</span>
+          <div className="flex items-center gap-1.5 rounded-full bg-gm-50 p-0.5 text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => setBillingCycle("monthly")}
+              className={`rounded-full px-2.5 py-1 transition ${billingCycle === "monthly" ? "bg-white text-gm-900 shadow-sm" : "text-gm-700/60"}`}
             >
-              <span className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name="subscribePlanCode"
-                  value={p.code}
-                  checked={planCode === p.code}
-                  onChange={() => setPlanCode(p.code)}
-                  className="accent-gm-500"
-                />
-                <span>
-                  <span className="block font-medium text-gm-900">{p.name}</span>
-                  <span className="block text-xs text-gm-700/60">{p.desc}</span>
+              Mensal
+            </button>
+            <button
+              type="button"
+              onClick={() => setBillingCycle("yearly")}
+              className={`rounded-full px-2.5 py-1 transition ${billingCycle === "yearly" ? "bg-white text-gm-900 shadow-sm" : "text-gm-700/60"}`}
+            >
+              Anual (-20%)
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-2">
+          {PLAN_OPTIONS.map((p) => {
+            const cents = billingCycle === "yearly" ? PLAN_PRICING[p.code].yearlyCents : PLAN_PRICING[p.code].monthlyCents;
+            return (
+              <label
+                key={p.code}
+                className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition ${
+                  planCode === p.code
+                    ? "border-gm-500 bg-gm-50 ring-1 ring-gm-500"
+                    : "border-gm-200 hover:border-gm-300"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    name="subscribePlanCode"
+                    value={p.code}
+                    checked={planCode === p.code}
+                    onChange={() => setPlanCode(p.code)}
+                    className="accent-gm-500"
+                  />
+                  <span>
+                    <span className="block font-medium text-gm-900">{p.name}</span>
+                    <span className="block text-xs text-gm-700/60">{p.desc}</span>
+                  </span>
                 </span>
-              </span>
-              <span className="font-semibold text-gm-700">{p.price}</span>
-            </label>
-          ))}
+                <span className="font-semibold text-gm-700">
+                  {formatBRL(cents)}/{billingCycle === "yearly" ? "ano" : "mês"}
+                </span>
+              </label>
+            );
+          })}
         </div>
       </div>
 
