@@ -6,7 +6,8 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
 const SESSION_COOKIE = "gm_session";
-const SESSION_DURATION_S = 60 * 60 * 24 * 7; // 7 dias
+const SESSION_DURATION_S = 60 * 60 * 24 * 7; // 7 dias (padrão)
+const REMEMBER_DURATION_S = 60 * 60 * 24 * 30; // 30 dias ("Lembrar-me" marcado)
 
 function getSecret(): Uint8Array {
   const secret = process.env.SESSION_SECRET;
@@ -19,18 +20,22 @@ export interface SessionPayload {
   email: string;
 }
 
-export async function createSession(payload: SessionPayload): Promise<void> {
+export async function createSession(
+  payload: SessionPayload,
+  options?: { remember?: boolean }
+): Promise<void> {
+  const duration = options?.remember ? REMEMBER_DURATION_S : SESSION_DURATION_S;
   const token = await new SignJWT({ ...payload })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime(`${SESSION_DURATION_S}s`)
+    .setExpirationTime(`${duration}s`)
     .sign(getSecret());
 
   cookies().set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: SESSION_DURATION_S,
+    maxAge: duration,
     path: "/",
   });
 }

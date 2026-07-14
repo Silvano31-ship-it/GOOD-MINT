@@ -26,7 +26,7 @@ function rateLimited(key: string): boolean {
 }
 
 export async function POST(req: Request) {
-  let body: { email?: string; password?: string };
+  let body: { email?: string; password?: string; remember?: boolean };
   try {
     body = await req.json();
   } catch {
@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "E-mail ou senha incorretos." }, { status: 401 });
   }
 
-  await createSession({ userId: user.id, email: user.email });
+  await createSession({ userId: user.id, email: user.email }, { remember: body.remember === true });
 
   const redirect =
     user.account_status === "suspended" ? "/conta-suspensa" : "/dashboard";
