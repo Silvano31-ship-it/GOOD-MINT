@@ -21,6 +21,8 @@ export interface CurrentUser {
   onboarding_done: boolean;
   account_status: string;
   trial_ends_at: Date | null;
+  background_url: string | null;
+  background_type: "image" | "video" | null;
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -30,7 +32,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const { rows } = await db.query<CurrentUser>(
     `SELECT u.id, u.full_name, u.email, u.phone, u.creci, u.avatar_url,
             u.bio, u.company_name, u.company_bio, u.dashboard_emoji, u.onboarding_done,
-            u.account_status, s.trial_ends_at
+            u.account_status, u.background_url, u.background_type, s.trial_ends_at
      FROM users u
      LEFT JOIN subscriptions s ON s.user_id = u.id AND s.canceled_at IS NULL
      WHERE u.id = $1

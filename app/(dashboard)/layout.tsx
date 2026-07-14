@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { requireActiveAccount, trialDaysLeft } from "@/lib/account-guard";
 import { Sidebar } from "@/components/Sidebar";
+import { DashboardBackground } from "@/components/dashboard/DashboardBackground";
 import { SUPPORT_PHONE_DISPLAY } from "@/lib/constants";
 
 export default async function DashboardLayout({
@@ -15,6 +16,7 @@ export default async function DashboardLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-gm-50/40 md:flex-row">
+      <DashboardBackground url={user.background_url} type={user.background_type} />
       <Sidebar userName={user.full_name} avatarUrl={user.avatar_url} />
       <main className="flex-1">
         {daysLeft !== null && (

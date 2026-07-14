@@ -4,6 +4,7 @@ import { requireActiveAccount } from "@/lib/account-guard";
 import { updateProfile } from "@/app/(dashboard)/actions";
 import { PageHeader } from "@/components/ui";
 import { AvatarUpload } from "@/components/AvatarUpload";
+import { BackgroundSelector } from "@/components/dashboard/BackgroundSelector";
 import { SubmitButton } from "@/components/SubmitButton";
 
 const SECTIONS = [
@@ -83,6 +84,7 @@ export default async function ConfiguracoesPage() {
               </div>
             </Link>
           ))}
+          <BackgroundSelector currentUrl={user.background_url} currentType={user.background_type} />
         </div>
       </div>
     </div>

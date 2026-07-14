@@ -542,6 +542,16 @@ export async function completeOnboarding() {
   revalidatePath("/dashboard");
 }
 
+/** Remove o fundo personalizado do Dashboard, voltando ao padrão. */
+export async function resetDashboardBackground() {
+  const userId = await requireUserId();
+  await db.query(`UPDATE users SET background_url=NULL, background_type=NULL WHERE id=$1`, [
+    userId,
+  ]);
+  revalidatePath("/dashboard");
+  revalidatePath("/configuracoes");
+}
+
 // ---------------------------------------------------------------- SUPORTE
 /** Grava o ticket e devolve o link do WhatsApp — não usa redirect() porque
  * precisamos abrir o WhatsApp numa aba nova a partir do client, e não navegar
