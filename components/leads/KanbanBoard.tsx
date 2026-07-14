@@ -14,11 +14,7 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
   const [, startTransition] = useTransition();
   const router = useRouter();
 
-  function onDrop(stage: string) {
-    setOverCol(null);
-    const id = dragId;
-    setDragId(null);
-    if (!id) return;
+  function moveLead(id: string, stage: string) {
     const lead = leads.find((l) => l.id === id);
     if (!lead || lead.funnel_stage === stage) return;
     // otimista
@@ -29,6 +25,14 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
       await updateLeadStage(id, stage);
       router.refresh();
     });
+  }
+
+  function onDrop(stage: string) {
+    setOverCol(null);
+    const id = dragId;
+    setDragId(null);
+    if (!id) return;
+    moveLead(id, stage);
   }
 
   return (
@@ -78,6 +82,20 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
                       </span>
                     )}
                   </Link>
+                  {/* Fallback pra telas pequenas, onde arrastar é ruim de usar. */}
+                  <select
+                    aria-label="Mover para..."
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) moveLead(lead.id, e.target.value);
+                    }}
+                    className="mt-2 min-h-9 w-full rounded-lg border border-gm-200 bg-white px-2 py-1 text-xs sm:hidden"
+                  >
+                    <option value="">Mover para...</option>
+                    {LEAD_STAGES.filter((s) => s.key !== lead.funnel_stage).map((s) => (
+                      <option key={s.key} value={s.key}>{s.label}</option>
+                    ))}
+                  </select>
                 </div>
               ))}
               {items.length === 0 && (

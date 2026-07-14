@@ -103,7 +103,7 @@ export async function getNegotiations(userId: string): Promise<Negotiation[]> {
 }
 
 const POST_SALE_LIST_SELECT = `
-  ps.id, l.name AS lead_name, p.address AS property_address, n.value_cents,
+  ps.id, l.name AS lead_name, l.phone AS lead_phone, p.address AS property_address, n.value_cents,
   ps.current_stage, ps.stage_updated_at, ps.next_action, ps.next_action_due_at,
   ps.is_financed, ps.kanban_status, ps.referral_token
 `;
@@ -191,7 +191,12 @@ export async function getPostSale(userId: string, id: string): Promise<PostSaleD
     })),
     ...communications.map((c) => ({
       kind: "comunicacao" as const,
-      label: c.kind === "mensagem_cliente" ? `Mensagem ao cliente (${c.channel ?? "-"})` : "Nota interna",
+      label:
+        c.kind === "mensagem_cliente"
+          ? `Mensagem ao cliente (${c.channel ?? "-"})`
+          : c.kind === "duvida_cliente"
+          ? "Dúvida do cliente"
+          : "Nota interna",
       detail: c.content,
       ts: c.created_at,
     })),
@@ -273,30 +278,75 @@ export interface PublicPostSaleView {
   lead_name: string;
   current_stage: string;
   is_financed: boolean;
+  property_address: string | null;
+  value_cents: string | null;
+  photo_url: string | null;
   checklist: { label: string; status: string }[];
 }
 
 /** Portal do cliente (/acompanhar/[token]) — somente leitura, escopado
  * exclusivamente pelo token (nunca por user_id/id). Lista de colunas
- * explícita: nunca inclui value_cents, notas internas ou dados de outra conta. */
+ * explícita: nunca inclui notas internas ou dados de outra conta. */
 export async function getPostSaleByToken(token: string): Promise<PublicPostSaleView | null> {
-  const { rows } = await db.query<{ id: string; lead_name: string; current_stage: string; is_financed: boolean }>(
-    `SELECT ps.id, l.name AS lead_name, ps.current_stage, ps.is_financed
+  const { rows } = await db.query<{
+    id: string;
+    lead_name: string;
+    current_stage: string;
+    is_financed: boolean;
+    property_address: string | null;
+    value_cents: string | null;
+    property_id: string | null;
+  }>(
+    `SELECT ps.id, l.name AS lead_name, ps.current_stage, ps.is_financed,
+            p.address AS property_address, n.value_cents, p.id AS property_id
      FROM post_sale_processes ps
      JOIN negotiations n ON n.id = ps.negotiation_id
      JOIN leads l ON l.id = n.lead_id
+     LEFT JOIN properties p ON p.id = n.property_id
      WHERE ps.referral_token = $1`,
     [token]
   );
   const ps = rows[0];
   if (!ps) return null;
 
-  const { rows: checklist } = await db.query<{ label: string; status: string }>(
-    `SELECT label, status FROM post_sale_checklist_items WHERE post_sale_id = $1 ORDER BY created_at ASC`,
-    [ps.id]
-  );
+  const [{ rows: checklist }, { rows: photos }] = await Promise.all([
+    db.query<{ label: string; status: string }>(
+      `SELECT label, status FROM post_sale_checklist_items WHERE post_sale_id = $1 ORDER BY created_at ASC`,
+      [ps.id]
+    ),
+    ps.property_id
+      ? db.query<{ url: string }>(
+          `SELECT url FROM property_photos WHERE property_id = $1 ORDER BY display_order ASC LIMIT 1`,
+          [ps.property_id]
+        )
+      : Promise.resolve({ rows: [] as { url: string }[] }),
+  ]);
 
-  return { lead_name: ps.lead_name, current_stage: ps.current_stage, is_financed: ps.is_financed, checklist };
+  return {
+    lead_name: ps.lead_name,
+    current_stage: ps.current_stage,
+    is_financed: ps.is_financed,
+    property_address: ps.property_address,
+    value_cents: ps.value_cents,
+    photo_url: photos[0]?.url ?? null,
+    checklist,
+  };
+}
+
+/** Cliente envia uma dúvida pelo portal público — escopado só pelo token. */
+export async function submitPortalQuestion(token: string, content: string): Promise<boolean> {
+  const trimmed = content.trim();
+  if (!trimmed) return false;
+  const { rows } = await db.query<{ id: string }>(
+    `SELECT id FROM post_sale_processes WHERE referral_token = $1`,
+    [token]
+  );
+  if (!rows[0]) return false;
+  await db.query(
+    `INSERT INTO post_sale_communications (post_sale_id, kind, content) VALUES ($1, 'duvida_cliente', $2)`,
+    [rows[0].id, trimmed]
+  );
+  return true;
 }
 
 export async function getUrgentPostSaleTasks(userId: string) {

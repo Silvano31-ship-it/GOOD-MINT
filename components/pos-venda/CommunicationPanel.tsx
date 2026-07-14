@@ -79,7 +79,11 @@ export function CommunicationPanel({ postSaleId, items }: { postSaleId: string; 
           <div key={c.id} className="rounded-lg bg-gm-50 px-3 py-2 text-sm">
             <div className="flex items-center justify-between">
               <span className="font-medium text-gm-900">
-                {c.kind === "mensagem_cliente" ? `Cliente (${c.channel})` : "Nota interna"}
+                {c.kind === "mensagem_cliente"
+                  ? `Cliente (${c.channel})`
+                  : c.kind === "duvida_cliente"
+                  ? "❓ Dúvida do cliente"
+                  : "Nota interna"}
               </span>
               <span className="text-xs text-gm-700/40">{formatDateTime(c.created_at)}</span>
             </div>

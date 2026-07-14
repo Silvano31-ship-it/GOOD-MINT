@@ -45,6 +45,8 @@ function CadastroForm() {
     const clientErrors: string[] = [];
     if (form.password.length < 8) clientErrors.push("A senha deve ter no mínimo 8 caracteres.");
     if (form.password !== form.confirmPassword) clientErrors.push("As senhas não coincidem.");
+    if (!/^\S+@\S+\.\S+$/.test(form.email)) clientErrors.push("Digite um e-mail válido.");
+    if (!form.lgpdConsent) clientErrors.push("Você precisa aceitar os termos de uso e a política de privacidade.");
     if (clientErrors.length > 0) {
       setErrors(clientErrors);
       return;

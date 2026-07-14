@@ -21,6 +21,8 @@ import {
 
 const STALL_DAYS = 5;
 
+const COMMON_ORIGINS = ["Indicação", "Redes sociais", "Site/Portal imobiliário", "Anúncio pago", "Placa/Rua", "Outro"];
+
 function isStale(l: Lead): boolean {
   if (l.funnel_stage === "fechado" || l.funnel_stage === "perdido") return false;
   if (!l.last_contact_at) return true;
@@ -30,6 +32,13 @@ function isStale(l: Lead): boolean {
 export function LeadsPlanilha({ leads }: { leads: Lead[] }) {
   const stageLabel = (k: string) => LEAD_STAGES.find((s) => s.key === k)?.label ?? k;
   const stageOptions = LEAD_STAGES.map((s) => ({ value: s.key, label: s.label }));
+  // Lista fixa + qualquer valor de origem já salvo em texto livre (dados antigos),
+  // pra não "sumir" nem trocar silenciosamente o valor de um lead existente.
+  const existingOrigins = Array.from(new Set(leads.map((l) => l.origin).filter(Boolean))) as string[];
+  const originOptions = [
+    { value: "", label: "—" },
+    ...Array.from(new Set([...COMMON_ORIGINS, ...existingOrigins])).map((o) => ({ value: o, label: o })),
+  ];
 
   const columns: Column<Lead>[] = [
     {
@@ -66,7 +75,7 @@ export function LeadsPlanilha({ leads }: { leads: Lead[] }) {
       key: "origin",
       label: "Origem",
       csvValue: (l) => l.origin ?? "",
-      editable: { type: "text", editValue: (l) => l.origin ?? "", onSave: updateLeadOrigin },
+      editable: { type: "select", options: originOptions, editValue: (l) => l.origin ?? "", onSave: updateLeadOrigin },
     },
     {
       key: "funnel_stage",

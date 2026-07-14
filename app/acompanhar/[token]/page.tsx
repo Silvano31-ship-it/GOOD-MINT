@@ -5,7 +5,9 @@ import { notFound } from "next/navigation";
 import { getPostSaleByToken } from "@/lib/data";
 import { POST_SALE_STAGES } from "@/lib/constants";
 import { StageProgress } from "@/components/pos-venda/StageProgress";
+import { QuestionForm } from "@/components/pos-venda/QuestionForm";
 import { Logo } from "@/components/Logo";
+import { formatBRL } from "@/lib/format";
 
 const STATUS_LABEL: Record<string, string> = {
   pendente: "Pendente",
@@ -28,6 +30,21 @@ export default async function AcompanharPage({ params }: { params: { token: stri
           <h1 className="text-lg font-semibold text-gm-900">Olá, {ps.lead_name}!</h1>
           <p className="mt-1 text-sm text-gm-700/60">Acompanhe aqui o andamento do seu processo.</p>
 
+          {ps.property_address && (
+            <div className="mt-4 overflow-hidden rounded-xl border border-gm-100">
+              {ps.photo_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={ps.photo_url} alt="" className="h-40 w-full object-cover" />
+              )}
+              <div className="p-3">
+                <div className="text-sm font-medium text-gm-900">{ps.property_address}</div>
+                {ps.value_cents && (
+                  <div className="text-sm text-gm-700/60">{formatBRL(Number(ps.value_cents))}</div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="mt-6">
             <StageProgress current={ps.current_stage} isFinanced={ps.is_financed} />
           </div>
@@ -48,6 +65,11 @@ export default async function AcompanharPage({ params }: { params: { token: stri
               </ul>
             </div>
           )}
+
+          <div className="mt-6 border-t border-gm-50 pt-4">
+            <h2 className="mb-2 text-sm font-semibold text-gm-900">Ficou com alguma dúvida?</h2>
+            <QuestionForm token={params.token} />
+          </div>
         </div>
         <p className="mt-4 text-center text-xs text-gm-700/40">GOOD MINT · Acompanhamento de pós-venda</p>
       </div>

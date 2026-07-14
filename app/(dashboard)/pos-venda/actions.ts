@@ -253,6 +253,13 @@ export async function addCommunication(
   return {};
 }
 
+/** Wrapper de addCommunication com retorno void — pra usar direto como
+ * `<form action={...}>` (que exige void/Promise<void>, não o `{ waUrl }` que
+ * addCommunication devolve pro CommunicationPanel abrir o WhatsApp). */
+export async function addTimelineEvent(postSaleId: string, formData: FormData): Promise<void> {
+  await addCommunication(postSaleId, formData);
+}
+
 // ---------------------------------------------------------------- INDICAÇÃO
 export async function requestReferral(postSaleId: string, formData: FormData) {
   const userId = await requireUserId();

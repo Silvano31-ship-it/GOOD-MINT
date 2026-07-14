@@ -102,6 +102,7 @@ export interface Negotiation {
 export interface PostSale {
   id: string;
   lead_name: string;
+  lead_phone: string | null;
   property_address: string | null;
   value_cents: string | null;
   current_stage: string;
