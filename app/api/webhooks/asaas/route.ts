@@ -5,6 +5,7 @@
 // Token de autenticação = valor de ASAAS_WEBHOOK_TOKEN.
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { sendPaymentFailedEmail } from "@/lib/mailer";
 
 interface AsaasWebhookPayload {
   event: string;
@@ -88,6 +89,23 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Erro interno." }, { status: 500 });
   } finally {
     client.release();
+  }
+
+  // E-mail de aviso é best-effort — nunca deve fazer o webhook falhar/reprocessar.
+  if (SUSPENDING_EVENTS.has(event)) {
+    try {
+      const { rows: userRows } = await db.query<{ email: string; full_name: string }>(
+        `SELECT email, full_name FROM users WHERE id = $1`,
+        [subscription.user_id]
+      );
+      const user = userRows[0];
+      if (user) {
+        const manageUrl = `${process.env.APP_URL ?? process.env.NEXT_PUBLIC_SITE_URL}/configuracoes/plano`;
+        await sendPaymentFailedEmail(user.email, user.full_name, manageUrl);
+      }
+    } catch (err) {
+      console.error("Erro ao enviar e-mail de falha de pagamento:", err);
+    }
   }
 
   return NextResponse.json({ ok: true });
