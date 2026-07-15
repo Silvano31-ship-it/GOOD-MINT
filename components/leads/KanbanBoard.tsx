@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { updateLeadStage } from "@/app/(dashboard)/actions";
 import { LEAD_STAGES, type Lead } from "@/lib/constants";
+import { formatBRL } from "@/lib/format";
 
 export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
   const [leads, setLeads] = useState(initialLeads);
@@ -75,6 +76,11 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
                     <div className="font-medium text-gm-900">{lead.name}</div>
                     {lead.phone && (
                       <div className="mt-0.5 text-xs text-gm-700/60">{lead.phone}</div>
+                    )}
+                    {lead.estimated_value_cents && (
+                      <div className="mt-0.5 text-xs font-medium text-gm-500">
+                        {formatBRL(Number(lead.estimated_value_cents))}
+                      </div>
                     )}
                     {lead.origin && (
                       <span className="mt-2 inline-block rounded bg-gm-50 px-1.5 py-0.5 text-[11px] text-gm-500">

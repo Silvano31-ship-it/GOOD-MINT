@@ -6,7 +6,7 @@ import { getLead, LEAD_STAGES } from "@/lib/data";
 import { db } from "@/lib/db";
 import { updateLead, addLeadInteraction, updateLeadStage } from "@/app/(dashboard)/actions";
 import { Badge } from "@/components/ui";
-import { formatDateTime, formatDate } from "@/lib/format";
+import { formatDateTime, formatDate, formatBRL } from "@/lib/format";
 import { LeadMessageTool } from "@/components/LeadMessageTool";
 
 export default async function LeadDetailPage({ params }: { params: { id: string } }) {
@@ -30,7 +30,12 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
     <div>
       <Link href="/leads" className="text-sm text-gm-500 hover:underline">← Voltar ao funil</Link>
       <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gm-900">{lead.name}</h1>
+        <div>
+          <h1 className="text-2xl font-bold text-gm-900">{lead.name}</h1>
+          {lead.estimated_value_cents && (
+            <p className="mt-1 text-sm text-gm-700/60">Valor estimado: {formatBRL(Number(lead.estimated_value_cents))}</p>
+          )}
+        </div>
         <Badge value={lead.funnel_stage} label={stageLabel} />
       </div>
 
@@ -45,6 +50,15 @@ export default async function LeadDetailPage({ params }: { params: { id: string 
               <input name="email" defaultValue={lead.email ?? ""} placeholder="E-mail" className="w-full rounded-lg border border-gm-200 px-3 py-2 text-sm" />
             </div>
             <input name="origin" defaultValue={lead.origin ?? ""} placeholder="Origem" className="w-full rounded-lg border border-gm-200 px-3 py-2 text-sm" />
+            <input
+              name="estimated_value"
+              type="number"
+              step="0.01"
+              min="0"
+              defaultValue={lead.estimated_value_cents ? Number(lead.estimated_value_cents) / 100 : ""}
+              placeholder="Valor estimado (R$, opcional)"
+              className="w-full rounded-lg border border-gm-200 px-3 py-2 text-sm"
+            />
             <textarea name="notes" defaultValue={lead.notes ?? ""} rows={3} placeholder="Observações" className="w-full rounded-lg border border-gm-200 px-3 py-2 text-sm" />
             <button className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600">Salvar</button>
           </form>

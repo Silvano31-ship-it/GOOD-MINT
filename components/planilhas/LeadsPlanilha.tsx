@@ -11,13 +11,14 @@ import { LEAD_STAGES, type Lead } from "@/lib/constants";
 import { DataTable, type Column } from "@/components/planilhas/DataTable";
 import { BarBreakdown } from "@/components/planilhas/BarBreakdown";
 import { ImportModal, type ImportField } from "@/components/planilhas/ImportModal";
-import { formatDate, onlyDigits } from "@/lib/format";
-import { contar, contarSe } from "@/lib/planilha-formulas";
+import { formatDate, formatBRL, onlyDigits } from "@/lib/format";
+import { contar, contarSe, soma, media } from "@/lib/planilha-formulas";
 import {
   updateLeadName,
   updateLeadPhone,
   updateLeadOrigin,
   updateLeadStageField,
+  updateLeadEstimatedValue,
   bulkDeleteLeads,
   duplicateLeads,
   bulkUpdateLeadStage,
@@ -112,6 +113,18 @@ export function LeadsPlanilha({ leads }: { leads: Lead[] }) {
       filterable: true,
     },
     { key: "last_contact_at", label: "Último contato", render: (l) => formatDate(l.last_contact_at), sortValue: (l) => l.last_contact_at ?? "", csvValue: (l) => formatDate(l.last_contact_at) },
+    {
+      key: "estimated_value_cents",
+      label: "Valor estimado",
+      render: (l) => formatBRL(l.estimated_value_cents ? Number(l.estimated_value_cents) : null),
+      sortValue: (l) => Number(l.estimated_value_cents ?? 0),
+      csvValue: (l) => formatBRL(l.estimated_value_cents ? Number(l.estimated_value_cents) : null),
+      editable: {
+        type: "number",
+        editValue: (l) => (l.estimated_value_cents ? String(Number(l.estimated_value_cents) / 100) : ""),
+        onSave: updateLeadEstimatedValue,
+      },
+    },
   ];
 
   const byStage = LEAD_STAGES.map((s) => ({
@@ -145,10 +158,15 @@ export function LeadsPlanilha({ leads }: { leads: Lead[] }) {
         filename="leads"
         selectable
         rowClassName={(l) => (isStale(l) ? "bg-amber-50" : "")}
-        footerStats={(rows) => [
-          { label: "Total de registros", value: String(contar(rows)) },
-          { label: "Leads parados", value: String(contarSe(rows, isStale)) },
-        ]}
+        footerStats={(rows) => {
+          const valueOf = (l: Lead) => Number(l.estimated_value_cents ?? 0);
+          return [
+            { label: "Total de registros", value: String(contar(rows)) },
+            { label: "Leads parados", value: String(contarSe(rows, isStale)) },
+            { label: "Valor estimado total", value: formatBRL(soma(rows, valueOf)) },
+            { label: "Valor estimado médio", value: formatBRL(Math.round(media(rows, valueOf))) },
+          ];
+        }}
         dedupe={{
           keyOf: (l) => `${l.name.trim().toLowerCase()}|${onlyDigits(l.phone ?? "")}`,
           onRemove: bulkDeleteLeads,

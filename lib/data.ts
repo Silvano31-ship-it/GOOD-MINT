@@ -57,7 +57,7 @@ export async function getCounts(userId: string): Promise<Counts> {
 
 export async function getLeads(userId: string): Promise<Lead[]> {
   const { rows } = await db.query<Lead>(
-    `SELECT id, name, phone, email, origin, notes, funnel_stage, last_contact_at, created_at
+    `SELECT id, name, phone, email, origin, notes, funnel_stage, last_contact_at, created_at, estimated_value_cents
      FROM leads WHERE user_id = $1 ORDER BY created_at DESC`,
     [userId]
   );
@@ -66,7 +66,7 @@ export async function getLeads(userId: string): Promise<Lead[]> {
 
 export async function getLead(userId: string, id: string): Promise<Lead | null> {
   const { rows } = await db.query<Lead>(
-    `SELECT id, name, phone, email, origin, notes, funnel_stage, last_contact_at, created_at
+    `SELECT id, name, phone, email, origin, notes, funnel_stage, last_contact_at, created_at, estimated_value_cents
      FROM leads WHERE user_id = $1 AND id = $2`,
     [userId, id]
   );

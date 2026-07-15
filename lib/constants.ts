@@ -80,6 +80,7 @@ export interface Lead {
   funnel_stage: string;
   last_contact_at: string | null;
   created_at: string;
+  estimated_value_cents: string | null;
 }
 
 export interface Property {

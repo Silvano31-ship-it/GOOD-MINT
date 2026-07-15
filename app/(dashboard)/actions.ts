@@ -30,7 +30,21 @@ async function planLimits(userId: string) {
 }
 
 // ---------------------------------------------------------------- LEADS
-export async function createLead(formData: FormData) {
+/** Converte "1500", "1500,50" ou "1.500,50" em centavos. Vazio -> null. */
+function parseEstimatedValueCents(raw: FormDataEntryValue | null): number | null {
+  const str = String(raw ?? "").trim();
+  if (!str) return null;
+  const normalized = str.includes(",") ? str.replace(/\./g, "").replace(",", ".") : str;
+  const n = Number(normalized);
+  return isNaN(n) ? null : Math.round(n * 100);
+}
+
+/** Chamada direto do client (não via <form action>), pra poder devolver o
+ * aviso de telefone duplicado sem sair da tela — ver NewLeadButton.tsx. */
+export async function createLead(
+  formData: FormData,
+  options?: { forceCreate?: boolean }
+): Promise<{ ok: boolean; duplicate?: { id: string; name: string } }> {
   const userId = await requireUserId();
   const { lead_limit } = await planLimits(userId);
   if (lead_limit != null) {
@@ -43,21 +57,39 @@ export async function createLead(formData: FormData) {
     }
   }
   const name = String(formData.get("name") ?? "").trim();
-  if (!name) redirect("/leads");
+  if (!name) return { ok: false };
+
+  const phone = String(formData.get("phone") ?? "") || null;
+  const phoneDigits = phone ? onlyDigits(phone) : "";
+
+  if (phoneDigits && !options?.forceCreate) {
+    const { rows } = await db.query<{ id: string; name: string }>(
+      `SELECT id, name FROM leads
+       WHERE user_id=$1 AND is_active AND regexp_replace(phone, '[^0-9]', '', 'g') = $2
+       LIMIT 1`,
+      [userId, phoneDigits]
+    );
+    if (rows[0]) {
+      return { ok: false, duplicate: { id: rows[0].id, name: rows[0].name } };
+    }
+  }
+
   await db.query(
-    `INSERT INTO leads (user_id, name, phone, email, origin, notes, funnel_stage, last_contact_at)
-     VALUES ($1,$2,$3,$4,$5,$6,'novo_lead', now())`,
+    `INSERT INTO leads (user_id, name, phone, email, origin, notes, funnel_stage, last_contact_at, estimated_value_cents)
+     VALUES ($1,$2,$3,$4,$5,$6,'novo_lead', now(), $7)`,
     [
       userId,
       name,
-      String(formData.get("phone") ?? "") || null,
+      phone,
       String(formData.get("email") ?? "") || null,
       String(formData.get("origin") ?? "") || null,
       String(formData.get("notes") ?? "") || null,
+      parseEstimatedValueCents(formData.get("estimated_value")),
     ]
   );
   revalidatePath("/leads");
   revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 export async function updateLeadStage(leadId: string, toStage: string) {
@@ -85,14 +117,15 @@ export async function updateLeadStage(leadId: string, toStage: string) {
 export async function updateLead(leadId: string, formData: FormData) {
   const userId = await requireUserId();
   await db.query(
-    `UPDATE leads SET name=$1, phone=$2, email=$3, origin=$4, notes=$5, last_contact_at=now()
-     WHERE id=$6 AND user_id=$7`,
+    `UPDATE leads SET name=$1, phone=$2, email=$3, origin=$4, notes=$5, last_contact_at=now(), estimated_value_cents=$6
+     WHERE id=$7 AND user_id=$8`,
     [
       String(formData.get("name") ?? "").trim(),
       String(formData.get("phone") ?? "") || null,
       String(formData.get("email") ?? "") || null,
       String(formData.get("origin") ?? "") || null,
       String(formData.get("notes") ?? "") || null,
+      parseEstimatedValueCents(formData.get("estimated_value")),
       leadId,
       userId,
     ]
@@ -120,13 +153,22 @@ export async function addLeadInteraction(leadId: string, formData: FormData) {
  * nome de coluna vindo do client, pra não abrir brecha de SQL injection. */
 export async function updateLeadField(leadId: string, field: string, value: string) {
   const userId = await requireUserId();
-  const allowed = new Set(["name", "phone", "email", "origin"]);
+  const allowed = new Set(["name", "phone", "email", "origin", "estimated_value_cents"]);
   if (!allowed.has(field)) return;
-  await db.query(`UPDATE leads SET ${field}=$1 WHERE id=$2 AND user_id=$3`, [
-    value || null,
-    leadId,
-    userId,
-  ]);
+
+  if (field === "estimated_value_cents") {
+    await db.query(`UPDATE leads SET estimated_value_cents=$1 WHERE id=$2 AND user_id=$3`, [
+      parseEstimatedValueCents(value),
+      leadId,
+      userId,
+    ]);
+  } else {
+    await db.query(`UPDATE leads SET ${field}=$1 WHERE id=$2 AND user_id=$3`, [
+      value || null,
+      leadId,
+      userId,
+    ]);
+  }
   revalidatePath("/planilhas/leads");
   revalidatePath(`/leads/${leadId}`);
 }
@@ -134,6 +176,7 @@ export async function updateLeadField(leadId: string, field: string, value: stri
 // Wrappers finos com assinatura (id, valor) — passados direto como onSave das
 // células editáveis da planilha, sem precisar de closures inline no server component.
 export async function updateLeadName(id: string, value: string) { return updateLeadField(id, "name", value); }
+export async function updateLeadEstimatedValue(id: string, value: string) { return updateLeadField(id, "estimated_value_cents", value); }
 export async function updateLeadPhone(id: string, value: string) { return updateLeadField(id, "phone", value); }
 export async function updateLeadOrigin(id: string, value: string) { return updateLeadField(id, "origin", value); }
 export async function updateLeadStageField(id: string, toStage: string) { return bulkUpdateLeadStage([id], toStage); }
