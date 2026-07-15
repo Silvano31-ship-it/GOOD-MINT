@@ -193,6 +193,9 @@ export const EMOJI_GROUPS: Record<string, string[]> = {
 export const SUPPORT_WHATSAPP = "5592984906392";
 export const SUPPORT_PHONE_DISPLAY = "(92) 98490-6392";
 
+/** Comissão estimada exibida nos totais das planilhas de Imóveis e Negociações. */
+export const COMMISSION_RATE = 0.06;
+
 /** Fundo padrão do Dashboard pra quem se cadastra a partir de agora — o
  * corretor pode trocar ou remover a qualquer momento em Configurações →
  * Personalizar Fundo (não afeta quem já tinha conta antes disso). */

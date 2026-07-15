@@ -25,6 +25,9 @@ export interface Column<T> {
   sortValue?: (row: T) => string | number;
   csvValue?: (row: T) => string;
   editable?: EditableConfig<T>;
+  /** Mostra um <select> de filtro no toolbar pra essa coluna. Opções vêm de
+   * `editable.options` quando existir, senão dos valores distintos nos dados. */
+  filterable?: boolean;
 }
 
 export interface BulkActions<T> {
@@ -35,6 +38,13 @@ export interface BulkActions<T> {
   onChangeStage?: (ids: string[], stage: string) => Promise<void>;
   /** Se true, mostra "Exportar selecionados" reaproveitando a lógica de CSV. */
   exportSelected?: boolean;
+}
+
+export interface DedupeConfig<T> {
+  /** Chave de comparação — linhas com a mesma chave são consideradas duplicadas. */
+  keyOf: (row: T) => string;
+  /** Recebe os ids das linhas duplicadas a remover (mantém a primeira de cada grupo). */
+  onRemove: (ids: string[]) => Promise<void>;
 }
 
 function EditableCell<T>({
@@ -128,6 +138,7 @@ export function DataTable<T extends { id: string }>({
   rowClassName,
   footerStats,
   bulkActions,
+  dedupe,
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -136,6 +147,7 @@ export function DataTable<T extends { id: string }>({
   rowClassName?: (row: T) => string;
   footerStats?: (rows: T[]) => { label: string; value: string }[];
   bulkActions?: BulkActions<T>;
+  dedupe?: DedupeConfig<T>;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -143,17 +155,30 @@ export function DataTable<T extends { id: string }>({
   const [sortDir, setSortDir] = useState<1 | -1>(1);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
+  const [dedupeBusy, setDedupeBusy] = useState(false);
+
+  const filterableColumns = useMemo(() => columns.filter((c) => c.filterable), [columns]);
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return rows;
+    let list = rows;
+
+    const activeFilters = Object.entries(columnFilters).filter(([, v]) => v);
+    if (activeFilters.length > 0) {
+      list = list.filter((r) =>
+        activeFilters.every(([key, value]) => String((r as any)[key] ?? "") === value)
+      );
+    }
+
+    if (!query.trim()) return list;
     const q = query.toLowerCase();
-    return rows.filter((r) =>
+    return list.filter((r) =>
       columns.some((c) => {
         const v = c.csvValue ? c.csvValue(r) : String((r as any)[c.key] ?? "");
         return v.toLowerCase().includes(q);
       })
     );
-  }, [rows, query, columns]);
+  }, [rows, query, columns, columnFilters]);
 
   const sorted = useMemo(() => {
     if (!sortKey) return filtered;
@@ -224,21 +249,84 @@ export function DataTable<T extends { id: string }>({
   const selectedRows = sorted.filter((r) => selected.has(r.id));
   const stats = footerStats?.(sorted);
 
+  async function handleRemoveDuplicates() {
+    if (!dedupe) return;
+    const seen = new Set<string>();
+    const duplicateIds: string[] = [];
+    // `rows` vem do banco em ordem "mais recente primeiro" — percorremos ao
+    // contrário pra manter a ocorrência mais antiga de cada grupo.
+    for (const row of [...rows].reverse()) {
+      const key = dedupe.keyOf(row);
+      if (!key) continue;
+      if (seen.has(key)) {
+        duplicateIds.push(row.id);
+      } else {
+        seen.add(key);
+      }
+    }
+    if (duplicateIds.length === 0) {
+      alert("Nenhum duplicado encontrado.");
+      return;
+    }
+    if (!confirm(`Encontrei ${duplicateIds.length} registro(s) duplicado(s). Remover, mantendo o mais antigo de cada?`)) {
+      return;
+    }
+    setDedupeBusy(true);
+    try {
+      await dedupe.onRemove(duplicateIds);
+      router.refresh();
+    } finally {
+      setDedupeBusy(false);
+    }
+  }
+
   return (
     <div className="gm-card overflow-hidden">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gm-50 p-4">
+      <div className="flex flex-wrap items-center gap-3 border-b border-gm-50 p-4">
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar..."
           className="w-56 rounded-lg border border-gm-200 px-3 py-1.5 text-sm outline-none focus:border-gm-500"
         />
-        <button
-          onClick={() => csvFrom(sorted)}
-          className="rounded-lg border border-gm-200 px-3 py-1.5 text-sm font-medium text-gm-700 hover:bg-gm-50"
-        >
-          ⬇ Exportar CSV
-        </button>
+        {filterableColumns.map((c) => {
+          const options =
+            c.editable?.options ??
+            Array.from(new Set(rows.map((r) => String((r as any)[c.key] ?? "")).filter(Boolean))).map((v) => ({
+              value: v,
+              label: v,
+            }));
+          return (
+            <select
+              key={c.key}
+              value={columnFilters[c.key] ?? ""}
+              onChange={(e) => setColumnFilters((f) => ({ ...f, [c.key]: e.target.value }))}
+              className="rounded-lg border border-gm-200 px-2 py-1.5 text-sm text-gm-700 outline-none focus:border-gm-500"
+            >
+              <option value="">{c.label}: todos</option>
+              {options.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          );
+        })}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {dedupe && (
+            <button
+              onClick={handleRemoveDuplicates}
+              disabled={dedupeBusy}
+              className="rounded-lg border border-gm-200 px-3 py-1.5 text-sm font-medium text-gm-700 hover:bg-gm-50 disabled:opacity-60"
+            >
+              🧹 Remover duplicados
+            </button>
+          )}
+          <button
+            onClick={() => csvFrom(sorted)}
+            className="rounded-lg border border-gm-200 px-3 py-1.5 text-sm font-medium text-gm-700 hover:bg-gm-50"
+          >
+            ⬇ Exportar CSV
+          </button>
+        </div>
       </div>
       <div className="gm-scroll overflow-x-auto">
         <table className="w-full text-sm">

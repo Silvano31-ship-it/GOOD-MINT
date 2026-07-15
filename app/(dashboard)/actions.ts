@@ -184,6 +184,39 @@ export async function bulkUpdateLeadStage(ids: string[], toStage: string) {
   revalidatePath("/dashboard");
 }
 
+/** Importação em lote (colar do Excel/CSV, ver ImportModal). Respeita o limite
+ * do plano — linhas além do limite são ignoradas e reportadas ao usuário. */
+export async function importLeads(
+  rows: { name: string; phone?: string; email?: string; origin?: string }[]
+): Promise<{ imported: number; skipped: number }> {
+  const userId = await requireUserId();
+  const clean = rows.filter((r) => r.name && r.name.trim());
+  if (clean.length === 0) return { imported: 0, skipped: 0 };
+
+  const { lead_limit } = await planLimits(userId);
+  let allowed = clean;
+  if (lead_limit != null) {
+    const { rows: countRows } = await db.query<{ c: string }>(
+      `SELECT count(*)::int AS c FROM leads WHERE user_id = $1 AND is_active`,
+      [userId]
+    );
+    const remaining = Math.max(0, lead_limit - Number(countRows[0].c));
+    allowed = clean.slice(0, remaining);
+  }
+
+  for (const r of allowed) {
+    await db.query(
+      `INSERT INTO leads (user_id, name, phone, email, origin, funnel_stage, last_contact_at)
+       VALUES ($1,$2,$3,$4,$5,'novo_lead', now())`,
+      [userId, r.name.trim(), r.phone?.trim() || null, r.email?.trim() || null, r.origin?.trim() || null]
+    );
+  }
+  revalidatePath("/planilhas/leads");
+  revalidatePath("/leads");
+  revalidatePath("/dashboard");
+  return { imported: allowed.length, skipped: clean.length - allowed.length };
+}
+
 // ---------------------------------------------------------------- IMÓVEIS
 export async function createProperty(formData: FormData) {
   const userId = await requireUserId();
@@ -301,6 +334,44 @@ export async function duplicateProperties(ids: string[]) {
   revalidatePath("/dashboard");
 }
 
+const VALID_PROPERTY_TYPES = new Set(["apartamento", "casa", "terreno", "comercial", "rural", "outro"]);
+const VALID_PROPERTY_STATUSES = new Set(["disponivel", "reservado", "vendido", "alugado", "inativo"]);
+
+/** Importação em lote (colar do Excel/CSV, ver ImportModal). Tipo/status fora
+ * da lista válida caem no padrão (são enums no banco, não aceitam texto livre). */
+export async function importProperties(
+  rows: { address: string; property_type?: string; price_cents?: number; area_m2?: string; status?: string }[]
+): Promise<{ imported: number; skipped: number }> {
+  const userId = await requireUserId();
+  const clean = rows.filter((r) => r.address && r.address.trim());
+  if (clean.length === 0) return { imported: 0, skipped: 0 };
+
+  const { property_limit } = await planLimits(userId);
+  let allowed = clean;
+  if (property_limit != null) {
+    const { rows: countRows } = await db.query<{ c: string }>(
+      `SELECT count(*)::int AS c FROM properties WHERE user_id=$1 AND is_active`,
+      [userId]
+    );
+    const remaining = Math.max(0, property_limit - Number(countRows[0].c));
+    allowed = clean.slice(0, remaining);
+  }
+
+  for (const r of allowed) {
+    const propertyType = r.property_type && VALID_PROPERTY_TYPES.has(r.property_type) ? r.property_type : "outro";
+    const status = r.status && VALID_PROPERTY_STATUSES.has(r.status) ? r.status : "disponivel";
+    await db.query(
+      `INSERT INTO properties (user_id, address, property_type, price_cents, area_m2, status)
+       VALUES ($1,$2,$3,$4,$5,$6)`,
+      [userId, r.address.trim(), propertyType, r.price_cents ?? 0, r.area_m2?.trim() || null, status]
+    );
+  }
+  revalidatePath("/planilhas/imoveis");
+  revalidatePath("/imoveis");
+  revalidatePath("/dashboard");
+  return { imported: allowed.length, skipped: clean.length - allowed.length };
+}
+
 // ---------------------------------------------------------------- NEGOCIAÇÕES
 export async function createNegotiation(formData: FormData) {
   const userId = await requireUserId();
@@ -378,6 +449,17 @@ export async function updateNegotiationField(negotiationId: string, field: strin
 
 export async function updateNegotiationValue(id: string, value: string) { return updateNegotiationField(id, "value_cents", value); }
 export async function updateNegotiationStatus(id: string, value: string) { return updateNegotiationField(id, "status", value); }
+
+/** Sem coluna is_active em negotiations (diferente de leads/properties) — exclusão
+ * é definitiva aqui, usada hoje só pelo "Remover duplicados" da planilha. */
+export async function bulkDeleteNegotiations(ids: string[]) {
+  const userId = await requireUserId();
+  if (ids.length === 0) return;
+  await db.query(`DELETE FROM negotiations WHERE id = ANY($1::uuid[]) AND user_id=$2`, [ids, userId]);
+  revalidatePath("/planilhas/negociacoes");
+  revalidatePath("/negociacoes");
+  revalidatePath("/dashboard");
+}
 
 // Ações de pós-venda (avançar/corrigir etapa, checklist, comunicação, kanban,
 // indicação) vivem em app/(dashboard)/pos-venda/actions.ts — arquivo próprio,

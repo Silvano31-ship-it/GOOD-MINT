@@ -5,10 +5,14 @@
 // um Client Component — só os dados brutos (leads) cruzam essa fronteira.
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { LEAD_STAGES, type Lead } from "@/lib/constants";
 import { DataTable, type Column } from "@/components/planilhas/DataTable";
-import { formatDate } from "@/lib/format";
+import { BarBreakdown } from "@/components/planilhas/BarBreakdown";
+import { ImportModal, type ImportField } from "@/components/planilhas/ImportModal";
+import { formatDate, onlyDigits } from "@/lib/format";
+import { contar, contarSe } from "@/lib/planilha-formulas";
 import {
   updateLeadName,
   updateLeadPhone,
@@ -17,7 +21,27 @@ import {
   bulkDeleteLeads,
   duplicateLeads,
   bulkUpdateLeadStage,
+  importLeads,
 } from "@/app/(dashboard)/actions";
+
+interface ImportLeadRow {
+  name: string;
+  phone?: string;
+  email?: string;
+  origin?: string;
+}
+
+const IMPORT_FIELDS: ImportField[] = [
+  { key: "name", label: "Nome", required: true },
+  { key: "phone", label: "Telefone", aliases: ["telefone"] },
+  { key: "email", label: "E-mail", aliases: ["email"] },
+  { key: "origin", label: "Origem", aliases: ["origem"] },
+];
+
+function buildImportRow(values: Record<string, string>): ImportLeadRow | null {
+  if (!values.name?.trim()) return null;
+  return { name: values.name, phone: values.phone, email: values.email, origin: values.origin };
+}
 
 const STALL_DAYS = 5;
 
@@ -30,6 +54,7 @@ function isStale(l: Lead): boolean {
 }
 
 export function LeadsPlanilha({ leads }: { leads: Lead[] }) {
+  const [importing, setImporting] = useState(false);
   const stageLabel = (k: string) => LEAD_STAGES.find((s) => s.key === k)?.label ?? k;
   const stageOptions = LEAD_STAGES.map((s) => ({ value: s.key, label: s.label }));
   // Lista fixa + qualquer valor de origem já salvo em texto livre (dados antigos),
@@ -76,6 +101,7 @@ export function LeadsPlanilha({ leads }: { leads: Lead[] }) {
       label: "Origem",
       csvValue: (l) => l.origin ?? "",
       editable: { type: "select", options: originOptions, editValue: (l) => l.origin ?? "", onSave: updateLeadOrigin },
+      filterable: true,
     },
     {
       key: "funnel_stage",
@@ -83,26 +109,59 @@ export function LeadsPlanilha({ leads }: { leads: Lead[] }) {
       render: (l) => stageLabel(l.funnel_stage),
       csvValue: (l) => stageLabel(l.funnel_stage),
       editable: { type: "select", options: stageOptions, editValue: (l) => l.funnel_stage, onSave: updateLeadStageField },
+      filterable: true,
     },
     { key: "last_contact_at", label: "Último contato", render: (l) => formatDate(l.last_contact_at), sortValue: (l) => l.last_contact_at ?? "", csvValue: (l) => formatDate(l.last_contact_at) },
   ];
 
+  const byStage = LEAD_STAGES.map((s) => ({
+    label: s.label,
+    value: leads.filter((l) => l.funnel_stage === s.key).length,
+  }));
+
   return (
-    <DataTable
-      rows={leads}
-      columns={columns}
-      filename="leads"
-      selectable
-      rowClassName={(l) => (isStale(l) ? "bg-amber-50" : "")}
-      footerStats={(rows) => [{ label: "Total de registros", value: String(rows.length) }]}
-      bulkActions={{
-        exportSelected: true,
-        onDelete: bulkDeleteLeads,
-        onDuplicate: duplicateLeads,
-        stageOptions,
-        stageLabel: "Mover etapa",
-        onChangeStage: bulkUpdateLeadStage,
-      }}
-    />
+    <div className="space-y-5">
+      <div className="flex justify-end">
+        <button
+          onClick={() => setImporting(true)}
+          className="rounded-lg border border-gm-200 px-3 py-1.5 text-sm font-medium text-gm-700 hover:bg-gm-50"
+        >
+          ⬆ Importar
+        </button>
+      </div>
+      {importing && (
+        <ImportModal<ImportLeadRow>
+          title="Importar leads"
+          fields={IMPORT_FIELDS}
+          buildRow={buildImportRow}
+          onImport={importLeads}
+          onClose={() => setImporting(false)}
+        />
+      )}
+      <BarBreakdown title="Leads por etapa" items={byStage} />
+      <DataTable
+        rows={leads}
+        columns={columns}
+        filename="leads"
+        selectable
+        rowClassName={(l) => (isStale(l) ? "bg-amber-50" : "")}
+        footerStats={(rows) => [
+          { label: "Total de registros", value: String(contar(rows)) },
+          { label: "Leads parados", value: String(contarSe(rows, isStale)) },
+        ]}
+        dedupe={{
+          keyOf: (l) => `${l.name.trim().toLowerCase()}|${onlyDigits(l.phone ?? "")}`,
+          onRemove: bulkDeleteLeads,
+        }}
+        bulkActions={{
+          exportSelected: true,
+          onDelete: bulkDeleteLeads,
+          onDuplicate: duplicateLeads,
+          stageOptions,
+          stageLabel: "Mover etapa",
+          onChangeStage: bulkUpdateLeadStage,
+        }}
+      />
+    </div>
   );
 }
