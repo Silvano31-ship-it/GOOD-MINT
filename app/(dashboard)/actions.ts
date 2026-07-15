@@ -20,6 +20,11 @@ async function requireUserId(): Promise<string> {
 }
 
 async function planLimits(userId: string) {
+  const { rows: uRows } = await db.query<{ ai_unlimited: boolean }>(
+    `SELECT ai_unlimited FROM users WHERE id = $1`,
+    [userId]
+  );
+  if (uRows[0]?.ai_unlimited) return { lead_limit: null, property_limit: null };
   const { rows } = await db.query<{ lead_limit: number | null; property_limit: number | null }>(
     `SELECT p.lead_limit, p.property_limit
      FROM subscriptions s JOIN plans p ON p.id = s.plan_id

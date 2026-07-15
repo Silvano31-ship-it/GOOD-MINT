@@ -23,6 +23,9 @@ export interface CurrentUser {
   trial_ends_at: Date | null;
   background_url: string | null;
   background_type: "image" | "video" | null;
+  /** Conta isenta de limites (ex.: o dono do SaaS) — sem trial, sem limite
+   * de leads/imóveis, sem limite de IA. Ver migrations/015_ai_unlimited.sql. */
+  ai_unlimited: boolean;
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -32,7 +35,7 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const { rows } = await db.query<CurrentUser>(
     `SELECT u.id, u.full_name, u.email, u.phone, u.creci, u.avatar_url,
             u.bio, u.company_name, u.company_bio, u.dashboard_emoji, u.onboarding_done,
-            u.account_status, u.background_url, u.background_type, s.trial_ends_at
+            u.account_status, u.background_url, u.background_type, u.ai_unlimited, s.trial_ends_at
      FROM users u
      LEFT JOIN subscriptions s ON s.user_id = u.id AND s.canceled_at IS NULL
      WHERE u.id = $1
@@ -46,12 +49,13 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
 export async function requireActiveAccount(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.account_status === "suspended") redirect("/conta-suspensa");
+  if (user.account_status === "suspended" && !user.ai_unlimited) redirect("/conta-suspensa");
   return user;
 }
 
 /** Dias restantes do trial (arredondado pra cima). Null se não estiver em trial. */
 export function trialDaysLeft(user: CurrentUser): number | null {
+  if (user.ai_unlimited) return null;
   if (user.account_status !== "trialing" || !user.trial_ends_at) return null;
   const ms = new Date(user.trial_ends_at).getTime() - Date.now();
   return Math.max(0, Math.ceil(ms / (1000 * 60 * 60 * 24)));

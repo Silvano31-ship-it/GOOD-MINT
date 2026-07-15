@@ -35,6 +35,11 @@ export interface Counts {
 }
 
 export async function getCounts(userId: string): Promise<Counts> {
+  const { rows: uRows } = await db.query<{ ai_unlimited: boolean }>(
+    `SELECT ai_unlimited FROM users WHERE id = $1`,
+    [userId]
+  );
+  const unlimited = uRows[0]?.ai_unlimited ?? false;
   const { rows } = await db.query(
     `SELECT
        (SELECT count(*) FROM leads WHERE user_id = $1 AND is_active) AS leads_active,
@@ -51,8 +56,8 @@ export async function getCounts(userId: string): Promise<Counts> {
     properties: Number(r.properties),
     negotiationsOpen: Number(r.negotiations_open),
     postSaleActive: Number(r.post_sale_active),
-    leadLimit: r.lead_limit == null ? null : Number(r.lead_limit),
-    propertyLimit: r.property_limit == null ? null : Number(r.property_limit),
+    leadLimit: unlimited ? null : r.lead_limit == null ? null : Number(r.lead_limit),
+    propertyLimit: unlimited ? null : r.property_limit == null ? null : Number(r.property_limit),
   };
 }
 
