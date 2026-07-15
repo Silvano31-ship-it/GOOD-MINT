@@ -3,7 +3,13 @@
 
 import { useEffect, useState } from "react";
 
-export function ThemeToggle({ className = "" }: { className?: string }) {
+export function ThemeToggle({
+  className = "",
+  onToggled,
+}: {
+  className?: string;
+  onToggled?: () => void;
+}) {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
@@ -15,6 +21,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
     setDark(next);
     document.documentElement.dataset.theme = next ? "dark" : "light";
     localStorage.setItem("gm-theme", next ? "dark" : "light");
+    onToggled?.();
   }
 
   return (
