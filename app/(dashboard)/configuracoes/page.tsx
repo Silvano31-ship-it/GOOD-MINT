@@ -5,6 +5,8 @@ import { updateProfile } from "@/app/(dashboard)/actions";
 import { PageHeader } from "@/components/ui";
 import { AvatarUpload } from "@/components/AvatarUpload";
 import { SubmitButton } from "@/components/SubmitButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LogoutButton } from "@/components/LogoutButton";
 
 const SECTIONS = [
   { href: "/configuracoes/plano", icon: "💳", title: "Plano e Cobrança", desc: "Assinatura, faturas e cancelamento" },
@@ -84,6 +86,14 @@ export default async function ConfiguracoesPage() {
               </div>
             </Link>
           ))}
+
+          <div className="gm-card space-y-1 p-3">
+            <ThemeToggle className="w-full justify-start" />
+            <LogoutButton
+              label="↪ Sair"
+              className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gm-700 hover:bg-gm-50"
+            />
+          </div>
         </div>
       </div>
     </div>

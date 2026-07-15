@@ -19,7 +19,7 @@ export default async function DashboardLayout({
       data-gm-bg={user.background_url ? "true" : undefined}
     >
       <DashboardBackground url={user.background_url} type={user.background_type} />
-      <Sidebar userName={user.full_name} avatarUrl={user.avatar_url} transparent={!!user.background_url} />
+      <Sidebar transparent={!!user.background_url} />
       <main className="flex-1">
         {daysLeft !== null && daysLeft <= 3 && (
           <div className="mx-4 mt-4 flex flex-wrap items-center justify-center gap-2 rounded-xl border border-red-400/70 bg-white/90 px-4 py-2.5 text-center text-sm text-gm-900 shadow-sm backdrop-blur-sm md:mx-8">

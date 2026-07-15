@@ -5,9 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
-import { LogoutButton } from "./LogoutButton";
-import { ThemeToggle } from "./ThemeToggle";
-import { getInitials } from "@/lib/constants";
 
 const NAV = [
   { href: "/dashboard", label: "Visão Geral", icon: "📊" },
@@ -26,15 +23,7 @@ const NAV = [
   { href: "/configuracoes", label: "Configurações", icon: "⚙️" },
 ];
 
-export function Sidebar({
-  userName,
-  avatarUrl,
-  transparent,
-}: {
-  userName: string;
-  avatarUrl?: string | null;
-  transparent?: boolean;
-}) {
+export function Sidebar({ transparent }: { transparent?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   // Detecta o tamanho real da tela por JavaScript (não só por media query
@@ -74,33 +63,6 @@ export function Sidebar({
         </Link>
       ))}
     </nav>
-  );
-
-  const bottomBlock = (
-    <div
-      className={`mt-2 space-y-1 ${
-        transparent
-          ? "rounded-2xl border border-red-400/70 bg-white/70 p-3 backdrop-blur-sm"
-          : "border-t border-gm-100 pt-3"
-      }`}
-    >
-      <div className="flex items-center gap-2 px-1 pb-1">
-        <div className="flex h-8 w-8 flex-none items-center justify-center overflow-hidden rounded-full bg-gm-500 text-xs font-semibold text-white">
-          {avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-          ) : (
-            getInitials(userName)
-          )}
-        </div>
-        <div className={`truncate text-xs ${transparent ? "text-gm-900" : "text-gm-700/50"}`}>{userName}</div>
-      </div>
-      <ThemeToggle className="w-full justify-start" onToggled={() => setOpen(false)} />
-      <LogoutButton
-        label="↪ Sair"
-        className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gm-700 hover:bg-gm-50"
-      />
-    </div>
   );
 
   return (
@@ -143,7 +105,6 @@ export function Sidebar({
               </button>
             </div>
             {navLinks}
-            {bottomBlock}
           </div>
         </div>
       )}
@@ -159,7 +120,6 @@ export function Sidebar({
               <Logo />
             </div>
             {navLinks}
-            {bottomBlock}
           </div>
         </aside>
       )}
