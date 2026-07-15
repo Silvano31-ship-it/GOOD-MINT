@@ -54,9 +54,17 @@ function buildTextPrompt(input: CaptionInput): string {
   else if (input.tone === "amigavel") prompt += "\nUse linguagem próxima e acolhedora, com emojis moderados.";
   else if (input.tone === "direto") prompt += "\nUse frases curtas, objetivas, sem enrolação.";
 
-  prompt += "\n\nGere em português brasileiro, sem mencionar que foi gerado por IA. Responda SOMENTE em JSON no formato {\"variacoes\":[\"...\",\"...\",\"...\"]} com exatamente 3 variações de legenda.";
+  prompt += "\n\nGere em português brasileiro, sem mencionar que foi gerado por IA. Responda SOMENTE com o JSON puro, sem bloco de código markdown (sem ```), no formato {\"variacoes\":[\"...\",\"...\",\"...\"]} com exatamente 3 variações de legenda.";
 
   return prompt;
+}
+
+/** Claude às vezes envolve a resposta em um bloco de código markdown
+ * (```json ... ```) mesmo quando instruído a não fazer isso — tira isso
+ * antes de tentar interpretar como JSON. */
+function extractJson(text: string): string {
+  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  return (fenced ? fenced[1] : text).trim();
 }
 
 export async function generateCaptions(input: CaptionInput): Promise<string[]> {
@@ -83,12 +91,12 @@ export async function generateCaptions(input: CaptionInput): Promise<string[]> {
   const json = await res.json();
   const text: string = json?.content?.[0]?.text ?? "{}";
   try {
-    const parsed = JSON.parse(text.trim());
+    const parsed = JSON.parse(extractJson(text));
     if (Array.isArray(parsed.variacoes) && parsed.variacoes.length > 0) {
       return parsed.variacoes.map((v: unknown) => String(v));
     }
   } catch {
-    // resposta fora do formato esperado — cai no erro abaixo
+    console.error("Resposta do Claude fora do formato JSON esperado:", text);
   }
   throw new Error("Não foi possível interpretar o texto gerado.");
 }
