@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
 import { LogoutButton } from "./LogoutButton";
 import { ThemeToggle } from "./ThemeToggle";
@@ -37,6 +37,19 @@ export function Sidebar({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  // Detecta o tamanho real da tela por JavaScript (não só por media query
+  // CSS): alguns navegadores "in-app" (WhatsApp, Telegram etc.) às vezes não
+  // aplicam a media query direito e mostram o menu de computador dentro de
+  // um celular. Começa assumindo celular (o público deste app é majoritário
+  // mobile) e só vira "computador" depois que o JS confirma a largura real.
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   const isActive = (href: string) =>
     href === "/dashboard" ? pathname === href : pathname.startsWith(href);
@@ -44,32 +57,36 @@ export function Sidebar({
   return (
     <>
       {/* Topbar mobile */}
-      <div
-        className={`flex items-center justify-between border-b px-4 py-3 md:hidden ${
-          transparent ? "border-white/10" : "border-gm-100 bg-gm-50"
-        }`}
-      >
-        <Logo size={24} />
-        <button
-          onClick={() => setOpen((v) => !v)}
-          aria-label="Menu"
-          className={`rounded-lg p-2 text-gm-700 hover:bg-gm-50 ${
-            transparent ? "border border-red-400/70 bg-white/70" : ""
+      {!isDesktop && (
+        <div
+          className={`flex items-center justify-between border-b px-4 py-3 ${
+            transparent ? "border-white/10" : "border-gm-100 bg-gm-50"
           }`}
         >
-          ☰
-        </button>
-      </div>
+          <Logo size={24} />
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-label="Menu"
+            className={`rounded-lg p-2 text-gm-700 hover:bg-gm-50 ${
+              transparent ? "border border-red-400/70 bg-white/70" : ""
+            }`}
+          >
+            ☰
+          </button>
+        </div>
+      )}
 
       <aside
-        className={`${open ? "block" : "hidden"} border-b md:sticky md:top-0 md:block md:h-screen md:w-64 md:flex-none md:border-b-0 md:border-r ${
-          transparent ? "border-transparent" : "border-gm-100 bg-gm-50"
-        }`}
+        className={`${isDesktop || open ? "block" : "hidden"} border-b ${
+          isDesktop ? "sticky top-0 h-screen w-64 flex-none border-b-0 border-r" : ""
+        } ${transparent ? "border-transparent" : "border-gm-100 bg-gm-50"}`}
       >
         <div className="flex h-full flex-col p-4">
-          <div className="hidden px-2 py-3 md:block">
-            <Logo />
-          </div>
+          {isDesktop && (
+            <div className="px-2 py-3">
+              <Logo />
+            </div>
+          )}
           <nav className="mt-2 flex-1 space-y-1.5">
             {NAV.map((item) => (
               <Link
