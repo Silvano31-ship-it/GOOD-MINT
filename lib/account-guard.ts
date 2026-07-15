@@ -26,6 +26,8 @@ export interface CurrentUser {
   /** Conta isenta de limites (ex.: o dono do SaaS) — sem trial, sem limite
    * de leads/imóveis, sem limite de IA. Ver migrations/015_ai_unlimited.sql. */
   ai_unlimited: boolean;
+  /** Nome do plano assinado (ex.: "MINT Pro") — null se ainda em trial ou sem assinatura. */
+  plan_name: string | null;
 }
 
 export async function getCurrentUser(): Promise<CurrentUser | null> {
@@ -35,9 +37,11 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   const { rows } = await db.query<CurrentUser>(
     `SELECT u.id, u.full_name, u.email, u.phone, u.creci, u.avatar_url,
             u.bio, u.company_name, u.company_bio, u.dashboard_emoji, u.onboarding_done,
-            u.account_status, u.background_url, u.background_type, u.ai_unlimited, s.trial_ends_at
+            u.account_status, u.background_url, u.background_type, u.ai_unlimited, s.trial_ends_at,
+            p.name AS plan_name
      FROM users u
      LEFT JOIN subscriptions s ON s.user_id = u.id AND s.canceled_at IS NULL
+     LEFT JOIN plans p ON p.id = s.plan_id
      WHERE u.id = $1
      ORDER BY s.created_at DESC NULLS LAST
      LIMIT 1`,
