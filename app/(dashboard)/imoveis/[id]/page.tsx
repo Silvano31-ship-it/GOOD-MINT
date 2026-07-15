@@ -17,7 +17,15 @@ export default async function EditImovelPage({ params }: { params: { id: string 
   return (
     <div className="mx-auto max-w-2xl">
       <Link href="/imoveis" className="text-sm text-gm-500 hover:underline">← Voltar</Link>
-      <h1 className="mb-6 mt-3 text-2xl font-bold text-gm-900">Editar imóvel</h1>
+      <div className="mb-6 mt-3 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-gm-900">Editar imóvel</h1>
+        <Link
+          href={`/conteudo/novo?propertyId=${property.id}`}
+          className="rounded-lg border border-gm-200 px-3 py-1.5 text-sm font-medium text-gm-700 hover:bg-gm-50"
+        >
+          📢 Gerar Post
+        </Link>
+      </div>
       <PropertyForm action={save} property={property} submitLabel="Salvar alterações" />
 
       <form action={remove} className="mt-4">

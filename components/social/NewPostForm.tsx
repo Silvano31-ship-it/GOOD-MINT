@@ -11,11 +11,17 @@ const CHANNEL_OPTIONS = [
   { key: "tiktok", label: "TikTok (em validação)", disabled: true },
 ];
 
-export function NewPostForm() {
+export function NewPostForm({
+  initialContent,
+  initialImageUrl,
+}: {
+  initialContent?: string;
+  initialImageUrl?: string | null;
+} = {}) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
-  const [content, setContent] = useState("");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [content, setContent] = useState(initialContent ?? "");
+  const [imageUrl, setImageUrl] = useState<string | null>(initialImageUrl ?? null);
   const [uploading, setUploading] = useState(false);
   const [channels, setChannels] = useState<string[]>([]);
   const [mode, setMode] = useState<"agora" | "agendar">("agora");

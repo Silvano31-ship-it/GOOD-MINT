@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { updateLeadStage } from "@/app/(dashboard)/actions";
-import { LEAD_STAGES, type Lead } from "@/lib/constants";
+import { LEAD_STAGES, isStale, type Lead } from "@/lib/constants";
 import { formatBRL } from "@/lib/format";
 
 export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
@@ -68,9 +68,9 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
                   draggable
                   onDragStart={() => setDragId(lead.id)}
                   onDragEnd={() => setDragId(null)}
-                  className={`cursor-grab rounded-lg border border-gm-100 bg-white p-3 shadow-sm transition active:cursor-grabbing ${
+                  className={`cursor-grab rounded-lg border p-3 shadow-sm transition active:cursor-grabbing ${
                     dragId === lead.id ? "opacity-50" : ""
-                  }`}
+                  } ${isStale(lead) ? "border-amber-200 bg-amber-50/40" : "border-gm-100 bg-white"}`}
                 >
                   <Link href={`/leads/${lead.id}`} className="block">
                     <div className="font-medium text-gm-900">{lead.name}</div>
@@ -85,6 +85,11 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
                     {lead.origin && (
                       <span className="mt-2 inline-block rounded bg-gm-50 px-1.5 py-0.5 text-[11px] text-gm-500">
                         {lead.origin}
+                      </span>
+                    )}
+                    {isStale(lead) && (
+                      <span className="ml-1 mt-2 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
+                        ⏰ Atrasado
                       </span>
                     )}
                   </Link>

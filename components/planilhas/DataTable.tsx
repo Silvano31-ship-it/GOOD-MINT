@@ -139,6 +139,7 @@ export function DataTable<T extends { id: string }>({
   footerStats,
   bulkActions,
   dedupe,
+  mobileCard,
 }: {
   rows: T[];
   columns: Column<T>[];
@@ -148,6 +149,10 @@ export function DataTable<T extends { id: string }>({
   footerStats?: (rows: T[]) => { label: string; value: string }[];
   bulkActions?: BulkActions<T>;
   dedupe?: DedupeConfig<T>;
+  /** Renderização opcional em cards empilhados pro celular (some com a
+   * rolagem horizontal da tabela nessa faixa). Quando ausente, comportamento
+   * idêntico ao de antes — só rolagem horizontal em qualquer tamanho de tela. */
+  mobileCard?: (row: T, helpers: { selected: boolean; toggleSelect: () => void }) => React.ReactNode;
 }) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -328,7 +333,7 @@ export function DataTable<T extends { id: string }>({
           </button>
         </div>
       </div>
-      <div className="gm-scroll overflow-x-auto">
+      <div className={`gm-scroll overflow-x-auto ${mobileCard ? "hidden sm:block" : ""}`}>
         <table className="w-full text-sm">
           <thead className="bg-gm-50 text-left text-xs uppercase text-gm-700/60">
             <tr>
@@ -391,6 +396,19 @@ export function DataTable<T extends { id: string }>({
           </tbody>
         </table>
       </div>
+
+      {mobileCard && (
+        <div className="divide-y divide-gm-50 sm:hidden">
+          {sorted.map((row) => (
+            <div key={row.id}>
+              {mobileCard(row, { selected: selected.has(row.id), toggleSelect: () => toggleRow(row.id) })}
+            </div>
+          ))}
+          {sorted.length === 0 && (
+            <div className="px-4 py-10 text-center text-sm text-gm-700/40">Nenhum registro encontrado.</div>
+          )}
+        </div>
+      )}
 
       {stats && stats.length > 0 && (
         <div className="flex flex-wrap gap-6 border-t border-gm-50 bg-gm-50/60 px-4 py-3 text-xs text-gm-700">

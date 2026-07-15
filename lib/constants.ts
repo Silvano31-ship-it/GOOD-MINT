@@ -230,3 +230,69 @@ export const DEFAULT_DASHBOARD_BACKGROUND = {
   url: "https://iz7yywkibd3e0mov.public.blob.vercel-storage.com/dashboard-bg/bb5b4446-7638-44ec-b739-e052bd6c0cb5-1784067165530.mp4",
   type: "video" as const,
 };
+
+export interface AiContent {
+  id: string;
+  property_id: string | null;
+  content_type: string;
+  title: string | null;
+  content: string;
+  tone: string | null;
+  image_url: string | null;
+  image_prompt: string | null;
+  image_style: string | null;
+  post_tip: string | null;
+  is_favorite: boolean;
+  rating: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Tipos de conteúdo do assistente de IA — chave livre (TEXT no banco, sem
+ * enum), pra dar pra adicionar um tipo novo sem migration. */
+export const AI_CONTENT_TYPES = [
+  { key: "imovel_disponivel", label: "Imóvel disponível" },
+  { key: "imovel_vendido", label: "Imóvel vendido/alugado" },
+  { key: "dica", label: "Dica para clientes" },
+  { key: "institucional", label: "Institucional" },
+  { key: "personalizado", label: "Assunto personalizado" },
+] as const;
+
+export const AI_CONTENT_TONES = [
+  { key: "profissional", label: "Profissional" },
+  { key: "amigavel", label: "Amigável" },
+  { key: "direto", label: "Direto" },
+] as const;
+
+/** Estilos de imagem do assistente de IA — fica aqui (não em lib/ai-image.ts,
+ * que importa @vercel/blob) pra poder ser usado direto num client component
+ * sem puxar código server-only pro bundle do navegador. */
+export const IMAGE_STYLES = [
+  { key: "fotorrealista", label: "Fotorrealista", promptFragment: "fotografia imobiliária realista, luz natural, ângulo amplo, 8k" },
+  { key: "luxuoso", label: "Luxuoso / Editorial", promptFragment: "estética editorial de revista de arquitetura, iluminação dramática, alto padrão" },
+  { key: "ensolarado", label: "Ensolarado / Convidativo", promptFragment: "dia ensolarado, céu azul, cores quentes e convidativas" },
+  { key: "minimalista", label: "Moderno Minimalista", promptFragment: "composição minimalista, paleta neutra, linhas limpas, arquitetura contemporânea" },
+  { key: "golden_hour", label: "Pôr do Sol / Golden Hour", promptFragment: "golden hour, céu dourado, atmosfera aspiracional" },
+] as const;
+
+export type ImageStyleKey = (typeof IMAGE_STYLES)[number]["key"];
+
+/** Dica de postagem fixa por tipo de conteúdo — sem chamada de IA nem
+ * tabela nova, só uma referência rápida mostrada no passo 6 do assistente. */
+export const AI_CONTENT_POSTING_TIPS: Record<string, string> = {
+  imovel_disponivel: "Melhor horário: 18h-20h. Formato sugerido: carrossel com 3-5 fotos do imóvel. Público-alvo: quem já demonstrou interesse na região.",
+  imovel_vendido: "Melhor horário: 12h-14h ou 19h-21h. Formato sugerido: foto única com a fachada ou as chaves. Reforça prova social e autoridade.",
+  dica: "Melhor horário: qualquer horário comercial. Formato sugerido: post único ou carrossel educativo, sem foco em venda direta.",
+  institucional: "Melhor horário: início da semana. Formato sugerido: foto sua ou da equipe, tom pessoal e próximo.",
+  personalizado: "Ajuste o horário e formato de acordo com o assunto escolhido.",
+};
+
+/** Considerado "sem contato" a partir de quantos dias — usado no selo do
+ * Kanban e na formatação condicional da planilha de Leads. */
+export const STALL_DAYS = 5;
+
+export function isStale(l: Lead): boolean {
+  if (l.funnel_stage === "fechado" || l.funnel_stage === "perdido") return false;
+  if (!l.last_contact_at) return true;
+  return Date.now() - new Date(l.last_contact_at).getTime() > STALL_DAYS * 86400000;
+}

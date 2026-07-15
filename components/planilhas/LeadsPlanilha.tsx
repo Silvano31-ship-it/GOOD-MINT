@@ -7,7 +7,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LEAD_STAGES, type Lead } from "@/lib/constants";
+import { LEAD_STAGES, isStale, type Lead } from "@/lib/constants";
 import { DataTable, type Column } from "@/components/planilhas/DataTable";
 import { BarBreakdown } from "@/components/planilhas/BarBreakdown";
 import { ImportModal, type ImportField } from "@/components/planilhas/ImportModal";
@@ -44,15 +44,7 @@ function buildImportRow(values: Record<string, string>): ImportLeadRow | null {
   return { name: values.name, phone: values.phone, email: values.email, origin: values.origin };
 }
 
-const STALL_DAYS = 5;
-
 const COMMON_ORIGINS = ["Indicação", "Redes sociais", "Site/Portal imobiliário", "Anúncio pago", "Placa/Rua", "Outro"];
-
-function isStale(l: Lead): boolean {
-  if (l.funnel_stage === "fechado" || l.funnel_stage === "perdido") return false;
-  if (!l.last_contact_at) return true;
-  return Date.now() - new Date(l.last_contact_at).getTime() > STALL_DAYS * 86400000;
-}
 
 export function LeadsPlanilha({ leads }: { leads: Lead[] }) {
   const [importing, setImporting] = useState(false);
@@ -179,6 +171,49 @@ export function LeadsPlanilha({ leads }: { leads: Lead[] }) {
           stageLabel: "Mover etapa",
           onChangeStage: bulkUpdateLeadStage,
         }}
+        mobileCard={(l, { selected, toggleSelect }) => (
+          <div className={`flex items-start gap-3 px-4 py-3 ${isStale(l) ? "bg-amber-50" : ""}`}>
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={toggleSelect}
+              aria-label="Selecionar lead"
+              className="mt-1 h-4 w-4 flex-none"
+            />
+            <Link href={`/leads/${l.id}`} className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="truncate font-medium text-gm-900">{l.name}</span>
+                {l.phone && (
+                  <a
+                    href={`https://wa.me/${l.phone.replace(/\D/g, "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    title="Abrir no WhatsApp"
+                    className="inline-flex h-7 w-7 flex-none items-center justify-center rounded-full bg-[#25D366]/10 text-sm"
+                  >
+                    💬
+                  </a>
+                )}
+              </div>
+              {l.phone && <div className="mt-0.5 text-xs text-gm-700/60">{l.phone}</div>}
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                <span className="rounded bg-gm-50 px-1.5 py-0.5 text-[11px] text-gm-700">{stageLabel(l.funnel_stage)}</span>
+                {l.origin && <span className="rounded bg-gm-50 px-1.5 py-0.5 text-[11px] text-gm-500">{l.origin}</span>}
+                {isStale(l) && (
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
+                    ⏰ Atrasado
+                  </span>
+                )}
+              </div>
+              {l.estimated_value_cents && (
+                <div className="mt-1 text-xs font-medium text-gm-500">
+                  {formatBRL(Number(l.estimated_value_cents))}
+                </div>
+              )}
+            </Link>
+          </div>
+        )}
       />
     </div>
   );

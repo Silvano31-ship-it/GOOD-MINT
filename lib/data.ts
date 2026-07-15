@@ -19,10 +19,11 @@ import {
   type Notification,
   type Note,
   type NoteMedia,
+  type AiContent,
 } from "./constants";
 
 export { LEAD_STAGES, POST_SALE_STAGES };
-export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia };
+export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia, AiContent };
 
 export interface Counts {
   leadsActive: number;
@@ -481,4 +482,25 @@ export async function getMeetingByCode(
   );
   const m = rows[0];
   return m ? { id: m.id, title: m.title, roomCode: m.room_code } : null;
+}
+
+// ---------------------------------------------------------------- CONTEÚDO COM IA
+export async function getAiContent(userId: string): Promise<AiContent[]> {
+  const { rows } = await db.query<AiContent>(
+    `SELECT id, property_id, content_type, title, content, tone, image_url, image_prompt,
+            image_style, post_tip, is_favorite, rating, created_at, updated_at
+     FROM ai_content WHERE user_id = $1 ORDER BY created_at DESC`,
+    [userId]
+  );
+  return rows;
+}
+
+export async function getAiContentItem(userId: string, id: string): Promise<AiContent | null> {
+  const { rows } = await db.query<AiContent>(
+    `SELECT id, property_id, content_type, title, content, tone, image_url, image_prompt,
+            image_style, post_tip, is_favorite, rating, created_at, updated_at
+     FROM ai_content WHERE user_id = $1 AND id = $2`,
+    [userId, id]
+  );
+  return rows[0] ?? null;
 }
