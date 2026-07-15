@@ -46,14 +46,16 @@ export function Sidebar({
       {/* Topbar mobile */}
       <div
         className={`flex items-center justify-between border-b px-4 py-3 md:hidden ${
-          transparent ? "border-white/10 bg-gm-50/50 backdrop-blur-md" : "border-gm-100 bg-gm-50"
+          transparent ? "border-white/10" : "border-gm-100 bg-gm-50"
         }`}
       >
         <Logo size={24} />
         <button
           onClick={() => setOpen((v) => !v)}
           aria-label="Menu"
-          className="rounded-lg p-2 text-gm-700 hover:bg-gm-50"
+          className={`rounded-lg p-2 text-gm-700 hover:bg-gm-50 ${
+            transparent ? "border border-red-400/70 bg-white/70" : ""
+          }`}
         >
           ☰
         </button>
@@ -61,23 +63,25 @@ export function Sidebar({
 
       <aside
         className={`${open ? "block" : "hidden"} border-b md:sticky md:top-0 md:block md:h-screen md:w-64 md:flex-none md:border-b-0 md:border-r ${
-          transparent ? "border-white/10 bg-gm-50/50 backdrop-blur-md" : "border-gm-100 bg-gm-50"
+          transparent ? "border-transparent" : "border-gm-100 bg-gm-50"
         }`}
       >
         <div className="flex h-full flex-col p-4">
           <div className="hidden px-2 py-3 md:block">
             <Logo />
           </div>
-          <nav className="mt-2 flex-1 space-y-1">
+          <nav className="mt-2 flex-1 space-y-1.5">
             {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition ${
+                className={`flex items-center gap-3 rounded-full px-3 py-2.5 text-sm font-medium transition ${
                   isActive(item.href)
                     ? "bg-gm-500 text-white"
-                    : "text-gm-700 hover:bg-gm-50"
+                    : transparent
+                    ? "border border-red-400/70 bg-white/70 text-gm-900 backdrop-blur-sm hover:bg-white/90"
+                    : "rounded-lg text-gm-700 hover:bg-gm-50"
                 }`}
               >
                 <span>{item.icon}</span>
@@ -85,7 +89,11 @@ export function Sidebar({
               </Link>
             ))}
           </nav>
-          <div className="mt-2 flex items-center gap-2 border-t border-gm-100 px-1 pt-3">
+          <div
+            className={`mt-2 flex items-center gap-2 px-1 pt-3 ${
+              transparent ? "" : "border-t border-gm-100"
+            }`}
+          >
             <div className="flex h-8 w-8 flex-none items-center justify-center overflow-hidden rounded-full bg-gm-500 text-xs font-semibold text-white">
               {avatarUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -94,7 +102,7 @@ export function Sidebar({
                 getInitials(userName)
               )}
             </div>
-            <div className="truncate text-xs text-gm-700/50">{userName}</div>
+            <div className={`truncate text-xs ${transparent ? "text-gm-900" : "text-gm-700/50"}`}>{userName}</div>
           </div>
           <div className="pt-1">
             <ThemeToggle className="w-full justify-start" />
