@@ -1,5 +1,6 @@
 // components/dashboard/BackgroundSelector.tsx — upload/restauração do fundo
-// personalizado do Dashboard, em Configurações. Mesmo padrão de estado do
+// personalizado do Dashboard, em Configurações → Personalizar Fundo (subpágina
+// própria, app/(dashboard)/configuracoes/fundo/). Mesmo padrão de estado do
 // AvatarUpload.tsx (upload por fetch+FormData pra API route própria).
 "use client";
 

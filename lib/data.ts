@@ -17,10 +17,12 @@ import {
   type Referral,
   type Task,
   type Notification,
+  type Note,
+  type NoteMedia,
 } from "./constants";
 
 export { LEAD_STAGES, POST_SALE_STAGES };
-export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification };
+export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia };
 
 export interface Counts {
   leadsActive: number;
@@ -244,9 +246,6 @@ export async function getPostSaleDashboardMetrics(userId: string): Promise<PostS
     [userId]
   );
 
-  // A função de janela (lag) precisa ser calculada numa subconsulta antes de
-  // agregar com avg() — Postgres não permite aggregate(window_function(...))
-  // diretamente na mesma consulta.
   const { rows: avgRows } = await db.query<{ avg_days: string | null }>(
     `SELECT avg(day_diff) AS avg_days FROM (
        SELECT extract(epoch FROM (changed_at - lag(changed_at) OVER (PARTITION BY post_sale_id ORDER BY changed_at))) / 86400 AS day_diff
@@ -426,4 +425,60 @@ export async function getWeeklyLeadGoalProgress(userId: string): Promise<number>
     [userId]
   );
   return Number(rows[0]?.c ?? 0);
+}
+
+// ---------------------------------------------------------------- NOTAS
+export async function getNotes(userId: string): Promise<Note[]> {
+  const { rows } = await db.query<Note>(
+    `SELECT id, title, content, created_at, updated_at
+     FROM notes WHERE user_id = $1 ORDER BY updated_at DESC`,
+    [userId]
+  );
+  return rows;
+}
+
+export async function getNote(
+  userId: string,
+  id: string
+): Promise<(Note & { media: NoteMedia[] }) | null> {
+  const { rows } = await db.query<Note>(
+    `SELECT id, title, content, created_at, updated_at
+     FROM notes WHERE user_id = $1 AND id = $2`,
+    [userId, id]
+  );
+  const note = rows[0];
+  if (!note) return null;
+  const { rows: media } = await db.query<NoteMedia>(
+    `SELECT id, url, media_type, created_at FROM note_media WHERE note_id = $1 ORDER BY created_at ASC`,
+    [id]
+  );
+  return { ...note, media };
+}
+
+// ---------------------------------------------------------------- CHAT EM GRUPO
+/** Escopado só pelo invite_code — usado pela página pública do convidado
+ * (app/chat/[code]/), que não tem sessão. Mesmo padrão de getPostSaleByToken. */
+export async function getChatGroupByCode(
+  code: string
+): Promise<{ id: string; name: string; inviteCode: string } | null> {
+  const { rows } = await db.query<{ id: string; name: string; invite_code: string }>(
+    `SELECT id, name, invite_code FROM chat_groups WHERE invite_code = $1`,
+    [code]
+  );
+  const g = rows[0];
+  return g ? { id: g.id, name: g.name, inviteCode: g.invite_code } : null;
+}
+
+// ---------------------------------------------------------------- REUNIÕES
+/** Escopado só pelo room_code — usado pela sala pública (app/sala/[code]/),
+ * que não tem sessão. Mesmo padrão de getChatGroupByCode. */
+export async function getMeetingByCode(
+  code: string
+): Promise<{ id: string; title: string; roomCode: string } | null> {
+  const { rows } = await db.query<{ id: string; title: string; room_code: string }>(
+    `SELECT id, title, room_code FROM meetings WHERE room_code = $1`,
+    [code]
+  );
+  const m = rows[0];
+  return m ? { id: m.id, title: m.title, roomCode: m.room_code } : null;
 }

@@ -16,6 +16,8 @@ const PUBLIC_PATHS = [
   "/privacidade",
   "/acompanhar", // portal do cliente (link mágico, sem login)
   "/indicar", // formulário público de indicação de clientes
+  "/chat", // chat em grupo — convidado entra por link/código, sem login
+  "/sala", // sala de videochamada — corretor e convidados, sem login
 ];
 
 function isPublic(pathname: string): boolean {
@@ -30,6 +32,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/api/webhooks") ||
     pathname.startsWith("/api/cron") ||
+    pathname.startsWith("/api/chat") || // mensagens do chat em grupo — convidado não tem sessão
     pathname.startsWith("/_next") ||
     pathname.includes(".")
   ) {

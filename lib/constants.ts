@@ -38,11 +38,6 @@ export const PLAN_PRICING: Record<string, { monthlyCents: number; yearlyCents: n
 
 export type BillingCycle = "monthly" | "yearly";
 
-// Fluxo vigente (9 etapas). Os 4 valores legados do enum do banco
-// ('documentacao_enviada', 'analise_credito', 'aprovacao', 'registro_cartorio')
-// não aparecem mais aqui — processos antigos já foram remapeados pela
-// migration 007. `conditional: true` marca a etapa de financiamento, que só
-// é exibida/exigida quando o processo tem `is_financed = true`.
 export const POST_SALE_STAGES = [
   { key: "assinatura_contrato", label: "Assinatura do Contrato" },
   { key: "envio_documentos_cartorio", label: "Envio de Documentos ao Cartório" },
@@ -55,7 +50,6 @@ export const POST_SALE_STAGES = [
   { key: "pesquisa_satisfacao", label: "Pesquisa de Satisfação" },
 ] as const;
 
-/** Ordem linear das chaves de etapa — usada pela guarda forward-only. */
 export const NEW_STAGE_ORDER = POST_SALE_STAGES.map((s) => s.key);
 
 export const KANBAN_STATUSES = [
@@ -140,8 +134,8 @@ export interface ChecklistItem {
 
 export interface Communication {
   id: string;
-  kind: string; // 'nota_interna' | 'mensagem_cliente'
-  channel: string | null; // 'email' | 'whatsapp' | null
+  kind: string;
+  channel: string | null;
   content: string;
   sent_at: string | null;
   created_at: string;
@@ -173,6 +167,43 @@ export interface Notification {
   created_at: string;
 }
 
+export interface Note {
+  id: string;
+  title: string;
+  content: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NoteMedia {
+  id: string;
+  url: string;
+  media_type: "image" | "video";
+  created_at: string;
+}
+
+export interface ChatGroup {
+  id: string;
+  name: string;
+  invite_code: string;
+  created_at: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender_name: string;
+  is_owner: boolean;
+  content: string;
+  created_at: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  room_code: string;
+  created_at: string;
+}
+
 /** Duas primeiras iniciais do nome, em maiúsculas (avatar de fallback). */
 export function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -189,16 +220,11 @@ export const EMOJI_GROUPS: Record<string, string[]> = {
   Leve: ["😄", "☕", "🌱", "🎉", "👋", "✨"],
 };
 
-/** Número oficial de suporte (WhatsApp), usado na tela de Suporte e no rodapé. */
 export const SUPPORT_WHATSAPP = "5592984906392";
 export const SUPPORT_PHONE_DISPLAY = "(92) 98490-6392";
 
-/** Comissão estimada exibida nos totais das planilhas de Imóveis e Negociações. */
 export const COMMISSION_RATE = 0.06;
 
-/** Fundo padrão do Dashboard pra quem se cadastra a partir de agora — o
- * corretor pode trocar ou remover a qualquer momento em Configurações →
- * Personalizar Fundo (não afeta quem já tinha conta antes disso). */
 export const DEFAULT_DASHBOARD_BACKGROUND = {
   url: "https://iz7yywkibd3e0mov.public.blob.vercel-storage.com/dashboard-bg/bb5b4446-7638-44ec-b739-e052bd6c0cb5-1784067165530.mp4",
   type: "video" as const,

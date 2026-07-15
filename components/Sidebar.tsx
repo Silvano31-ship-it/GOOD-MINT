@@ -16,6 +16,9 @@ const NAV = [
   { href: "/negociacoes", label: "Negociações", icon: "🤝" },
   { href: "/pos-venda", label: "Pós-Venda", icon: "📦" },
   { href: "/planilhas", label: "Planilhas", icon: "📋" },
+  { href: "/notas", label: "Notas", icon: "📝" },
+  { href: "/grupos", label: "Grupos", icon: "👥" },
+  { href: "/reunioes", label: "Reuniões", icon: "🎥" },
   { href: "/tarefas", label: "Tarefas", icon: "✅" },
   { href: "/mensagens", label: "Central de Mensagens", icon: "💬" },
   { href: "/social", label: "Social", icon: "📣" },
@@ -30,8 +33,6 @@ export function Sidebar({
 }: {
   userName: string;
   avatarUrl?: string | null;
-  /** Sem fundo sólido — usado quando o corretor tem um fundo personalizado no
-   * Dashboard (foto/vídeo), pra ele aparecer por trás do menu inteiro. */
   transparent?: boolean;
 }) {
   const pathname = usePathname();
@@ -59,9 +60,9 @@ export function Sidebar({
       </div>
 
       <aside
-        className={`${open ? "block" : "hidden"} ${
+        className={`${open ? "block" : "hidden"} border-b md:sticky md:top-0 md:block md:h-screen md:w-64 md:flex-none md:border-b-0 md:border-r ${
           transparent ? "border-white/10" : "border-gm-100 bg-gm-50"
-        } border-b md:sticky md:top-0 md:block md:h-screen md:w-64 md:flex-none md:border-b-0 md:border-r`}
+        }`}
       >
         <div className="flex h-full flex-col p-4">
           <div className="hidden px-2 py-3 md:block">
