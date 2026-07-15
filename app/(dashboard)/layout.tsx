@@ -15,7 +15,10 @@ export default async function DashboardLayout({
   const daysLeft = trialDaysLeft(user);
 
   return (
-    <div className="flex min-h-screen flex-col bg-gm-50/40 md:flex-row">
+    <div
+      className="flex min-h-screen flex-col bg-gm-50/40 md:flex-row"
+      data-gm-bg={user.background_url ? "true" : undefined}
+    >
       <DashboardBackground url={user.background_url} type={user.background_type} />
       <Sidebar userName={user.full_name} avatarUrl={user.avatar_url} transparent={!!user.background_url} />
       <main className="flex-1">

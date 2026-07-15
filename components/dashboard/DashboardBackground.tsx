@@ -34,7 +34,7 @@ export function DashboardBackground({
         // eslint-disable-next-line @next/next/no-img-element
         <img src={url} alt="" className="h-full w-full object-cover" onError={() => setFailed(true)} />
       )}
-      <div className="absolute inset-0 bg-black/20" />
+      <div className="absolute inset-0 bg-black/8" />
     </div>
   );
 }
