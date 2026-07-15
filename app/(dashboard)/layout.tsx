@@ -4,7 +4,6 @@ import Link from "next/link";
 import { requireActiveAccount, trialDaysLeft } from "@/lib/account-guard";
 import { Sidebar } from "@/components/Sidebar";
 import { DashboardBackground } from "@/components/dashboard/DashboardBackground";
-import { SUPPORT_PHONE_DISPLAY } from "@/lib/constants";
 
 export default async function DashboardLayout({
   children,
@@ -35,7 +34,7 @@ export default async function DashboardLayout({
         )}
         <div className="mx-auto max-w-6xl px-4 py-6 md:px-8 md:py-8">{children}</div>
         <footer className="px-4 pb-6 text-center text-xs text-gm-700/40 md:px-8">
-          GOOD MINT · CRM do corretor autônomo · Suporte: {SUPPORT_PHONE_DISPLAY}
+          GOOD MINT · CRM do corretor autônomo
         </footer>
       </main>
     </div>
