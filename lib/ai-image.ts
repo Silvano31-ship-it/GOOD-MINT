@@ -53,7 +53,6 @@ export async function generatePropertyImage(input: ImageGenInput, userId: string
       size: "1792x1024",
       quality: "hd",
       n: 1,
-      response_format: "b64_json",
     }),
     cache: "no-store",
   });
@@ -64,10 +63,16 @@ export async function generatePropertyImage(input: ImageGenInput, userId: string
   }
 
   const json = await res.json();
-  const b64: string | undefined = json?.data?.[0]?.b64_json;
-  if (!b64) throw new Error("A OpenAI não retornou a imagem gerada.");
-
-  const bytes = Buffer.from(b64, "base64");
+  const item = json?.data?.[0];
+  let bytes: Buffer;
+  if (item?.b64_json) {
+    bytes = Buffer.from(item.b64_json, "base64");
+  } else if (item?.url) {
+    const imgRes = await fetch(item.url);
+    bytes = Buffer.from(await imgRes.arrayBuffer());
+  } else {
+    throw new Error("A OpenAI não retornou a imagem gerada.");
+  }
   const blob = await put(`conteudo-ia/${userId}-${Date.now()}.png`, bytes, {
     access: "public",
     addRandomSuffix: false,
