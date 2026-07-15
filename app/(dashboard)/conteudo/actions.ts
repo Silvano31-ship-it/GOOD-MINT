@@ -7,8 +7,11 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { generateCaptions, type CaptionInput } from "@/lib/ai-text";
 import { generatePropertyImage, type ImageGenInput } from "@/lib/ai-image";
+import { generatePropertyImageGemini } from "@/lib/ai-image-gemini";
 import { generateChatReply, type ChatMessage } from "@/lib/ai-chat";
 import { getAiQuota, logAiUsage } from "@/lib/ai-quota";
+
+export type ImageProvider = "openai" | "gemini";
 
 async function requireUserId(): Promise<string> {
   const session = await getSession();
@@ -35,18 +38,25 @@ export async function generateCaptionsAction(
 }
 
 export async function generateImageAction(
-  input: ImageGenInput
+  input: ImageGenInput,
+  provider: ImageProvider = "openai"
 ): Promise<{ ok: boolean; url?: string; prompt?: string; error?: string }> {
   const userId = await requireUserId();
-  if (!process.env.OPENAI_API_KEY) {
-    return { ok: false, error: "A geração de imagem por IA ainda não foi configurada nesta conta." };
+  if (provider === "gemini" && !process.env.GEMINI_API_KEY) {
+    return { ok: false, error: "A geração de imagem pela Gemini ainda não foi configurada nesta conta." };
+  }
+  if (provider === "openai" && !process.env.OPENAI_API_KEY) {
+    return { ok: false, error: "A geração de imagem pela OpenAI ainda não foi configurada nesta conta." };
   }
   const quota = await getAiQuota(userId, "imagem");
   if (quota.exceeded) {
     return { ok: false, error: "Você atingiu o limite mensal de imagens geradas por IA do seu plano." };
   }
   try {
-    const { url, prompt } = await generatePropertyImage(input, userId);
+    const { url, prompt } =
+      provider === "gemini"
+        ? await generatePropertyImageGemini(input, userId)
+        : await generatePropertyImage(input, userId);
     await logAiUsage(userId, "imagem");
     return { ok: true, url, prompt };
   } catch (err) {

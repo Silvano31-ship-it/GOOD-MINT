@@ -27,7 +27,7 @@ export interface ImageGenInput {
   style: ImageStyleKey;
 }
 
-function buildImagePrompt(input: ImageGenInput): string {
+export function buildImagePrompt(input: ImageGenInput): string {
   const styleFragment = IMAGE_STYLES.find((s) => s.key === input.style)?.promptFragment ?? IMAGE_STYLES[0].promptFragment;
   let subject: string;
   if (input.property) {
