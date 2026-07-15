@@ -90,25 +90,27 @@ export function Sidebar({
             ))}
           </nav>
           <div
-            className={`mt-2 flex items-center gap-2 px-1 pt-3 ${
-              transparent ? "" : "border-t border-gm-100"
+            className={`mt-2 space-y-1 ${
+              transparent
+                ? "rounded-2xl border border-red-400/70 bg-white/70 p-3 backdrop-blur-sm"
+                : "border-t border-gm-100 pt-3"
             }`}
           >
-            <div className="flex h-8 w-8 flex-none items-center justify-center overflow-hidden rounded-full bg-gm-500 text-xs font-semibold text-white">
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                getInitials(userName)
-              )}
+            <div className="flex items-center gap-2 px-1 pb-1">
+              <div className="flex h-8 w-8 flex-none items-center justify-center overflow-hidden rounded-full bg-gm-500 text-xs font-semibold text-white">
+                {avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  getInitials(userName)
+                )}
+              </div>
+              <div className={`truncate text-xs ${transparent ? "text-gm-900" : "text-gm-700/50"}`}>{userName}</div>
             </div>
-            <div className={`truncate text-xs ${transparent ? "text-gm-900" : "text-gm-700/50"}`}>{userName}</div>
-          </div>
-          <div className="pt-1">
             <ThemeToggle className="w-full justify-start" />
             <LogoutButton
               label="↪ Sair"
-              className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gm-700 hover:bg-gm-50"
+              className="w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-gm-700 hover:bg-gm-50"
             />
           </div>
         </div>
