@@ -13,7 +13,7 @@ const NAV = [
   { href: "/negociacoes", label: "Negociações", icon: "🤝" },
   { href: "/pos-venda", label: "Pós-Venda", icon: "📦" },
   { href: "/planilhas", label: "Planilhas", icon: "📋" },
-  { href: "/conteudo", label: "Conteúdo com IA", icon: "🪄" },
+  { href: "/conteudo", label: "IA GOOD | Conteúdo", icon: "🪄" },
   { href: "/notas", label: "Notas", icon: "📝" },
   { href: "/grupos", label: "Grupos", icon: "👥" },
   { href: "/reunioes", label: "Reuniões", icon: "🎥" },

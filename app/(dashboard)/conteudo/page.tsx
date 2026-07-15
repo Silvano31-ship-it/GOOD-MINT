@@ -45,7 +45,7 @@ export default async function ConteudoPage() {
   return (
     <div>
       <PageHeader
-        title="Conteúdo com IA"
+        title="IA GOOD | Conteúdo"
         subtitle="Gere legendas e imagens para suas redes sociais em poucos passos."
         action={
           <Link href="/conteudo/novo" className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600">

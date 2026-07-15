@@ -19,7 +19,7 @@ export default async function NovoConteudoPage({
 
   return (
     <div>
-      <Link href="/conteudo" className="text-sm text-gm-500 hover:underline">← Conteúdo com IA</Link>
+      <Link href="/conteudo" className="text-sm text-gm-500 hover:underline">← IA GOOD | Conteúdo</Link>
       <PageHeader title="Novo conteúdo" subtitle="Gere uma legenda e, se quiser, uma imagem para o seu post." />
       <ConteudoWizard properties={properties} initialPropertyId={searchParams.propertyId ?? null} />
     </div>
