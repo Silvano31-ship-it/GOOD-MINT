@@ -48,9 +48,14 @@ export default async function ConteudoPage() {
         title="IA GOOD | Conteúdo"
         subtitle="Gere legendas e imagens para suas redes sociais em poucos passos."
         action={
-          <Link href="/conteudo/novo" className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600">
-            + Novo conteúdo
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href="/conteudo/chat" className="rounded-lg border border-gm-200 px-4 py-2 text-sm font-medium text-gm-700 hover:bg-gm-50">
+              💬 Conversar com a IA
+            </Link>
+            <Link href="/conteudo/novo" className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600">
+              + Novo conteúdo
+            </Link>
+          </div>
         }
       />
 

@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
 import { generateCaptions, type CaptionInput } from "@/lib/ai-text";
 import { generatePropertyImage, type ImageGenInput } from "@/lib/ai-image";
+import { generateChatReply, type ChatMessage } from "@/lib/ai-chat";
 import { getAiQuota, logAiUsage } from "@/lib/ai-quota";
 
 async function requireUserId(): Promise<string> {
@@ -51,6 +52,24 @@ export async function generateImageAction(
   } catch (err) {
     console.error("Erro ao gerar imagem:", err);
     return { ok: false, error: "Não foi possível gerar a imagem agora. Tente novamente." };
+  }
+}
+
+export async function sendChatMessageAction(
+  messages: ChatMessage[]
+): Promise<{ ok: boolean; reply?: string; error?: string }> {
+  const userId = await requireUserId();
+  const quota = await getAiQuota(userId, "texto");
+  if (quota.exceeded) {
+    return { ok: false, error: "Você atingiu o limite mensal de textos gerados por IA do seu plano." };
+  }
+  try {
+    const reply = await generateChatReply(messages);
+    await logAiUsage(userId, "texto");
+    return { ok: true, reply };
+  } catch (err) {
+    console.error("Erro no chat de IA:", err);
+    return { ok: false, error: "Não foi possível responder agora. Tente novamente." };
   }
 }
 
