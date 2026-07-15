@@ -1,13 +1,14 @@
 // lib/ai-image.ts — geração de imagem de imóvel pro Módulo Conteúdo com IA,
-// via OpenAI (DALL-E 3, fetch direto, sem instalar o pacote `openai` — mesmo
-// estilo minimalista de lib/claude-vision.ts). Resultado sobe pro Vercel Blob
-// (mesmo `put()` de app/api/social/image/route.ts), não pro Supabase Storage.
+// via OpenAI (gpt-image-1, fetch direto, sem instalar o pacote `openai` —
+// mesmo estilo minimalista de lib/claude-vision.ts). Resultado sobe pro
+// Vercel Blob (mesmo `put()` de app/api/social/image/route.ts), não pro
+// Supabase Storage.
 
 import { put } from "@vercel/blob";
 import { IMAGE_STYLES, type ImageStyleKey } from "@/lib/constants";
 
 const API_URL = "https://api.openai.com/v1/images/generations";
-const MODEL = "dall-e-3";
+const MODEL = "gpt-image-1";
 
 function apiKey(): string {
   const key = process.env.OPENAI_API_KEY;
@@ -50,8 +51,8 @@ export async function generatePropertyImage(input: ImageGenInput, userId: string
     body: JSON.stringify({
       model: MODEL,
       prompt,
-      size: "1792x1024",
-      quality: "hd",
+      size: "1536x1024",
+      quality: "high",
       n: 1,
     }),
     cache: "no-store",
