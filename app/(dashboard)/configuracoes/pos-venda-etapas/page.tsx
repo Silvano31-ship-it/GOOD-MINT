@@ -23,9 +23,7 @@ export default async function PosVendaEtapasPage() {
       <form action={updatePostSaleStageLabels} className="gm-card max-w-xl space-y-3 p-6">
         {stages.map((s) => (
           <label key={s.key} className="block">
-            <span className="mb-1 block text-xs font-medium text-gm-700/60">
-              {s.conditional ? `${s.label} (só aparece em negócios financiados)` : s.label}
-            </span>
+            <span className="mb-1 block text-xs font-medium text-gm-700/60">{s.label}</span>
             <input
               name={`label_${s.key}`}
               defaultValue={s.label}
