@@ -8,6 +8,8 @@ import { db } from "./db";
 import {
   LEAD_STAGES,
   POST_SALE_STAGES,
+  COMMISSION_RATE,
+  isStale,
   type Lead,
   type Property,
   type Negotiation,
@@ -40,6 +42,7 @@ export async function getCounts(userId: string): Promise<Counts> {
     [userId]
   );
   const unlimited = uRows[0]?.ai_unlimited ?? false;
+
   const { rows } = await db.query(
     `SELECT
        (SELECT count(*) FROM leads WHERE user_id = $1 AND is_active) AS leads_active,
@@ -252,6 +255,9 @@ export async function getPostSaleDashboardMetrics(userId: string): Promise<PostS
     [userId]
   );
 
+  // A função de janela (lag) precisa ser calculada numa subconsulta antes de
+  // agregar com avg() — Postgres não permite aggregate(window_function(...))
+  // diretamente na mesma consulta.
   const { rows: avgRows } = await db.query<{ avg_days: string | null }>(
     `SELECT avg(day_diff) AS avg_days FROM (
        SELECT extract(epoch FROM (changed_at - lag(changed_at) OVER (PARTITION BY post_sale_id ORDER BY changed_at))) / 86400 AS day_diff
@@ -352,6 +358,52 @@ export async function submitPortalQuestion(token: string, content: string): Prom
     [rows[0].id, trimmed]
   );
   return true;
+}
+
+/** Leads sem contato recente (ver isStale em lib/constants.ts), pro widget
+ * do Dashboard — os mais atrasados primeiro, limitado aos 5 mais urgentes. */
+export async function getStaleLeadsForDashboard(userId: string): Promise<Lead[]> {
+  const { rows } = await db.query<Lead>(
+    `SELECT id, name, phone, email, origin, notes, funnel_stage, last_contact_at, created_at, estimated_value_cents
+     FROM leads
+     WHERE user_id = $1 AND is_active AND funnel_stage NOT IN ('fechado', 'perdido')
+     ORDER BY last_contact_at ASC NULLS FIRST`,
+    [userId]
+  );
+  return rows.filter(isStale).slice(0, 5);
+}
+
+/** Tarefas pendentes com vencimento até o fim do dia de hoje (inclui
+ * atrasadas), pro widget do Dashboard. */
+export async function getTodayTasksForDashboard(userId: string): Promise<Task[]> {
+  const { rows } = await db.query<Task>(
+    `SELECT id, title, due_at, done, related_type, created_at
+     FROM tasks
+     WHERE user_id = $1 AND done = false AND due_at IS NOT NULL AND due_at < (current_date + 1)
+     ORDER BY due_at ASC
+     LIMIT 5`,
+    [userId]
+  );
+  return rows;
+}
+
+/** Comissão estimada (em centavos) se todas as negociações abertas fecharem,
+ * pro widget do Dashboard. */
+export async function getEstimatedMonthlyCommission(userId: string): Promise<number> {
+  const { rows } = await db.query<{ total: string | null }>(
+    `SELECT COALESCE(SUM(value_cents), 0) AS total FROM negotiations WHERE user_id = $1 AND status = 'aberta'`,
+    [userId]
+  );
+  return Math.round(Number(rows[0]?.total ?? 0) * COMMISSION_RATE);
+}
+
+/** Reuniões (salas de videochamada) mais recentes, pro widget do Dashboard. */
+export async function getRecentMeetings(userId: string): Promise<{ id: string; title: string; room_code: string; created_at: string }[]> {
+  const { rows } = await db.query<{ id: string; title: string; room_code: string; created_at: string }>(
+    `SELECT id, title, room_code, created_at FROM meetings WHERE user_id = $1 ORDER BY created_at DESC LIMIT 3`,
+    [userId]
+  );
+  return rows;
 }
 
 export async function getUrgentPostSaleTasks(userId: string) {

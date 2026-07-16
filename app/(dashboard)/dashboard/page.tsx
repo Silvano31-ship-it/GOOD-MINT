@@ -3,8 +3,17 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireActiveAccount } from "@/lib/account-guard";
-import { getCounts, getLeadFunnelMetrics, getWeeklyLeadGoalProgress } from "@/lib/data";
+import {
+  getCounts,
+  getLeadFunnelMetrics,
+  getWeeklyLeadGoalProgress,
+  getStaleLeadsForDashboard,
+  getTodayTasksForDashboard,
+  getEstimatedMonthlyCommission,
+  getRecentMeetings,
+} from "@/lib/data";
 import { WEEKLY_LEAD_GOAL } from "@/lib/constants";
+import { formatBRL, formatDateTime } from "@/lib/format";
 import { CrystalSphere } from "@/components/CrystalSphere";
 import { StatCard } from "@/components/ui";
 import { DashboardGreeting } from "@/components/DashboardGreeting";
@@ -13,10 +22,14 @@ import { FunnelChart } from "@/components/pos-venda/FunnelChart";
 export default async function DashboardHome() {
   const user = await requireActiveAccount();
   if (!user.onboarding_done) redirect("/onboarding");
-  const [counts, funnelMetrics, weeklyLeads] = await Promise.all([
+  const [counts, funnelMetrics, weeklyLeads, staleLeads, todayTasks, estimatedCommission, recentMeetings] = await Promise.all([
     getCounts(user.id),
     getLeadFunnelMetrics(user.id),
     getWeeklyLeadGoalProgress(user.id),
+    getStaleLeadsForDashboard(user.id),
+    getTodayTasksForDashboard(user.id),
+    getEstimatedMonthlyCommission(user.id),
+    getRecentMeetings(user.id),
   ]);
 
   const isEmpty =
@@ -78,6 +91,73 @@ export default async function DashboardHome() {
           {weeklyLeads >= WEEKLY_LEAD_GOAL && (
             <p className="mt-2 text-xs font-medium text-green-600">Meta batida! 🎉</p>
           )}
+        </div>
+      </section>
+
+      {/* Widgets de acompanhamento */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="gm-card p-4">
+          <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-gm-900">⏰ Leads atrasados</h3>
+          {staleLeads.length === 0 ? (
+            <p className="text-sm text-gm-700/50">Nenhum lead esperando retorno. 🎉</p>
+          ) : (
+            <ul className="space-y-2">
+              {staleLeads.map((l) => (
+                <li key={l.id}>
+                  <Link href={`/leads/${l.id}`} className="block rounded-lg px-2 py-1.5 -mx-2 text-sm hover:bg-gm-50">
+                    <span className="font-medium text-gm-900">{l.name}</span>
+                    <span className="block text-xs text-gm-700/50">
+                      {l.last_contact_at ? `Sem contato desde ${formatDateTime(l.last_contact_at)}` : "Nunca contatado"}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/leads" className="mt-3 block text-xs font-medium text-gm-500 hover:underline">Ver todos os leads →</Link>
+        </div>
+
+        <div className="gm-card p-4">
+          <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-gm-900">✅ Tarefas de hoje</h3>
+          {todayTasks.length === 0 ? (
+            <p className="text-sm text-gm-700/50">Nenhuma tarefa vencendo hoje.</p>
+          ) : (
+            <ul className="space-y-2">
+              {todayTasks.map((t) => (
+                <li key={t.id} className="text-sm">
+                  <span className="block font-medium text-gm-900">{t.title}</span>
+                  <span className="block text-xs text-gm-700/50">Vence em {formatDateTime(t.due_at)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/tarefas" className="mt-3 block text-xs font-medium text-gm-500 hover:underline">Ver todas as tarefas →</Link>
+        </div>
+
+        <div className="gm-card p-4">
+          <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-gm-900">💰 Comissão prevista</h3>
+          <p className="text-2xl font-bold text-gm-900">{formatBRL(estimatedCommission)}</p>
+          <p className="mt-1 text-xs text-gm-700/50">Se todas as negociações em aberto fecharem, nesse mês.</p>
+          <Link href="/negociacoes" className="mt-3 block text-xs font-medium text-gm-500 hover:underline">Ver negociações →</Link>
+        </div>
+
+        <div className="gm-card p-4">
+          <h3 className="mb-3 flex items-center gap-1.5 font-semibold text-gm-900">🎥 Reuniões recentes</h3>
+          {recentMeetings.length === 0 ? (
+            <p className="text-sm text-gm-700/50">Nenhuma reunião criada ainda.</p>
+          ) : (
+            <ul className="space-y-2">
+              {recentMeetings.map((m) => (
+                <li key={m.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate font-medium text-gm-900">{m.title}</span>
+                  <Link href={`/sala/${m.room_code}`} target="_blank" className="shrink-0 rounded-lg bg-gm-500 px-2 py-1 text-xs font-semibold text-white hover:bg-gm-600">
+                    Entrar
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/reunioes" className="mt-3 block text-xs font-medium text-gm-500 hover:underline">Ver todas as reuniões →</Link>
         </div>
       </section>
 
