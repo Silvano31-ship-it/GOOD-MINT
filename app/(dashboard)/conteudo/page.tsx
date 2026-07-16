@@ -36,17 +36,16 @@ function QuotaBar({ label, used, limit }: { label: string; used: number; limit: 
 
 export default async function ConteudoPage() {
   const user = await requireActiveAccount();
-  const [items, textQuota, imageQuota] = await Promise.all([
+  const [items, textQuota] = await Promise.all([
     getAiContent(user.id),
     getAiQuota(user.id, "texto"),
-    getAiQuota(user.id, "imagem"),
   ]);
 
   return (
     <div>
       <PageHeader
         title="IA GOOD | Conteúdo"
-        subtitle="Gere legendas e imagens para suas redes sociais em poucos passos."
+        subtitle="Gere legendas prontas para suas redes sociais em poucos passos."
         action={
           <div className="flex flex-wrap gap-2">
             <Link href="/conteudo/chat" className="rounded-lg border border-gm-200 px-4 py-2 text-sm font-medium text-gm-700 hover:bg-gm-50">
@@ -59,16 +58,15 @@ export default async function ConteudoPage() {
         }
       />
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
+      <div className="mb-6">
         <QuotaBar label="Textos gerados por IA" used={textQuota.used} limit={textQuota.limit} />
-        <QuotaBar label="Imagens geradas por IA" used={imageQuota.used} limit={imageQuota.limit} />
       </div>
 
       {items.length === 0 ? (
         <EmptyState
           icon="🪄"
           title="Nenhum conteúdo gerado ainda"
-          desc="Crie sua primeira legenda ou imagem com ajuda da IA."
+          desc="Crie sua primeira legenda com ajuda da IA."
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
