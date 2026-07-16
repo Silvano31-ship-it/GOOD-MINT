@@ -58,6 +58,22 @@ export const POST_SALE_STAGES = [
 /** Ordem linear das chaves de etapa — usada pela guarda forward-only. */
 export const NEW_STAGE_ORDER = POST_SALE_STAGES.map((s) => s.key);
 
+export interface PostSaleStage {
+  key: string;
+  label: string;
+  conditional?: boolean;
+}
+
+/** Aplica os nomes personalizados do corretor (ver migration 019) por cima dos
+ * nomes padrão das etapas — etapa sem personalização mantém o nome padrão. */
+export function resolveStages(overrides?: Record<string, string> | null): PostSaleStage[] {
+  return POST_SALE_STAGES.map((s) => ({
+    key: s.key,
+    label: overrides?.[s.key]?.trim() || s.label,
+    conditional: "conditional" in s ? s.conditional : undefined,
+  }));
+}
+
 export const KANBAN_STATUSES = [
   { key: "a_fazer", label: "A Fazer" },
   { key: "em_andamento", label: "Em Andamento" },

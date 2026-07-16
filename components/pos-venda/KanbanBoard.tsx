@@ -6,14 +6,14 @@
 "use client";
 
 import Link from "next/link";
-import type { PostSale } from "@/lib/constants";
+import type { PostSale, PostSaleStage } from "@/lib/constants";
 import { POST_SALE_STAGES, KANBAN_STATUSES } from "@/lib/constants";
 import { setKanbanStatus } from "@/app/(dashboard)/pos-venda/actions";
 import { formatDate } from "@/lib/format";
 
 const STALL_DAYS = 5;
 
-export function KanbanBoard({ items }: { items: PostSale[] }) {
+export function KanbanBoard({ items, stages = POST_SALE_STAGES }: { items: PostSale[]; stages?: readonly PostSaleStage[] }) {
   const byStatus = Object.fromEntries(KANBAN_STATUSES.map((k) => [k.key, [] as PostSale[]]));
   for (const item of items) {
     (byStatus[item.kanban_status] ?? byStatus.a_fazer).push(item);
@@ -32,7 +32,7 @@ export function KanbanBoard({ items }: { items: PostSale[] }) {
               const stalled =
                 Date.now() - new Date(ps.stage_updated_at).getTime() > STALL_DAYS * 86400000 &&
                 ps.current_stage !== "pesquisa_satisfacao";
-              const stageLabel = POST_SALE_STAGES.find((s) => s.key === ps.current_stage)?.label;
+              const stageLabel = stages.find((s) => s.key === ps.current_stage)?.label;
               return (
                 <div key={ps.id} className="gm-card p-4">
                   <Link href={`/pos-venda/${ps.id}`} className="block">

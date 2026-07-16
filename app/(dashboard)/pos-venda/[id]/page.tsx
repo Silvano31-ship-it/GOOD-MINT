@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireActiveAccount } from "@/lib/account-guard";
-import { getPostSale, POST_SALE_STAGES } from "@/lib/data";
+import { getPostSale, getPostSaleStageOverrides, resolveStages } from "@/lib/data";
 import { StageProgress } from "@/components/pos-venda/StageProgress";
 import { ChecklistPanel } from "@/components/pos-venda/ChecklistPanel";
 import { CommunicationPanel } from "@/components/pos-venda/CommunicationPanel";
@@ -20,22 +20,26 @@ import { PortalLinkCard } from "@/components/pos-venda/PortalLinkCard";
 
 export default async function PosVendaDetailPage({ params }: { params: { id: string } }) {
   const user = await requireActiveAccount();
-  const ps = await getPostSale(user.id, params.id);
+  const [ps, overrides] = await Promise.all([
+    getPostSale(user.id, params.id),
+    getPostSaleStageOverrides(user.id),
+  ]);
   if (!ps) notFound();
 
-  const stages = POST_SALE_STAGES.filter((s) => !("conditional" in s && s.conditional) || ps.is_financed);
+  const allStages = resolveStages(overrides);
+  const stages = allStages.filter((s) => !("conditional" in s && s.conditional) || ps.is_financed);
   const currentIdx = stages.findIndex((s) => s.key === ps.current_stage);
   const nextStage = stages[currentIdx + 1];
   const priorStages = stages.slice(0, currentIdx);
   const saveNextAction = setPostSaleNextAction.bind(null, ps.id);
-  const stageLabel = (k: string) => POST_SALE_STAGES.find((s) => s.key === k)?.label ?? k;
+  const stageLabel = (k: string) => allStages.find((s) => s.key === k)?.label ?? k;
 
   const geral = (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="gm-card p-6 lg:col-span-2">
           <h2 className="mb-5 font-semibold text-gm-900">Andamento do processo</h2>
-          <StageProgress current={ps.current_stage} isFinanced={ps.is_financed} />
+          <StageProgress current={ps.current_stage} isFinanced={ps.is_financed} stages={allStages} />
 
           <div className="mt-4 flex flex-wrap gap-2 border-t border-gm-50 pt-4">
             {nextStage ? (

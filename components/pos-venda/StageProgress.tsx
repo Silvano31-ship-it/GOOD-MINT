@@ -1,16 +1,20 @@
 // components/pos-venda/StageProgress.tsx — barra de progresso das etapas do pós-venda.
-import { POST_SALE_STAGES } from "@/lib/constants";
+import { POST_SALE_STAGES, type PostSaleStage } from "@/lib/constants";
 
 export function StageProgress({
   current,
   compact = false,
   isFinanced = true,
+  stages: allStages = POST_SALE_STAGES,
 }: {
   current: string;
   compact?: boolean;
   isFinanced?: boolean;
+  /** Etapas já com os nomes personalizados do corretor (ver lib/constants.ts#resolveStages).
+   * Cai no padrão de fábrica se quem chamar não passar (ex.: preview sem usuário). */
+  stages?: readonly PostSaleStage[];
 }) {
-  const stages = POST_SALE_STAGES.filter((s) => !("conditional" in s && s.conditional) || isFinanced);
+  const stages = allStages.filter((s) => !("conditional" in s && s.conditional) || isFinanced);
   const idx = stages.findIndex((s) => s.key === current);
   const pct = Math.round(((idx + 1) / stages.length) * 100);
 

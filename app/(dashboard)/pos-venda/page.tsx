@@ -2,7 +2,7 @@
 // kanban_status, coluna operacional separada da etapa linear).
 import Link from "next/link";
 import { requireActiveAccount } from "@/lib/account-guard";
-import { getPostSales, POST_SALE_STAGES } from "@/lib/data";
+import { getPostSales, getPostSaleStageOverrides, resolveStages } from "@/lib/data";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { PosVendaTabs } from "@/components/pos-venda/PosVendaTabs";
 import { KanbanBoard } from "@/components/pos-venda/KanbanBoard";
@@ -12,8 +12,12 @@ const RISK_DAYS = 7;
 
 export default async function PosVendaPage() {
   const user = await requireActiveAccount();
-  const items = await getPostSales(user.id);
-  const stageLabel = (k: string) => POST_SALE_STAGES.find((s) => s.key === k)?.label ?? k;
+  const [items, overrides] = await Promise.all([
+    getPostSales(user.id),
+    getPostSaleStageOverrides(user.id),
+  ]);
+  const stages = resolveStages(overrides);
+  const stageLabel = (k: string) => stages.find((s) => s.key === k)?.label ?? k;
 
   const active = items.filter((i) => i.current_stage !== "pesquisa_satisfacao");
   const riskCutoff = Date.now() - RISK_DAYS * 86400000;
@@ -64,7 +68,7 @@ export default async function PosVendaPage() {
             />
           </div>
 
-          <KanbanBoard items={items} />
+          <KanbanBoard items={items} stages={stages} />
 
           <div className="mt-8">
             <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gm-700/50">

@@ -5,11 +5,13 @@
 // para quem só usa isso em Server Components.
 
 import { db } from "./db";
+import { sendPushToUser } from "./push";
 import {
   LEAD_STAGES,
   POST_SALE_STAGES,
   COMMISSION_RATE,
   isStale,
+  resolveStages,
   type Lead,
   type Property,
   type Negotiation,
@@ -22,9 +24,21 @@ import {
   type Note,
   type NoteMedia,
   type AiContent,
+  type PostSaleStage,
 } from "./constants";
 
-export { LEAD_STAGES, POST_SALE_STAGES };
+export { LEAD_STAGES, POST_SALE_STAGES, resolveStages };
+export type { PostSaleStage };
+
+/** Nomes de etapa personalizados pelo corretor (ver migration 019). Vazio
+ * ({}) para quem nunca personalizou nenhuma. */
+export async function getPostSaleStageOverrides(userId: string): Promise<Record<string, string>> {
+  const { rows } = await db.query<{ post_sale_stage_labels: Record<string, string> }>(
+    `SELECT post_sale_stage_labels FROM users WHERE id = $1`,
+    [userId]
+  );
+  return rows[0]?.post_sale_stage_labels ?? {};
+}
 export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia, AiContent };
 
 export interface Counts {
@@ -192,7 +206,9 @@ export async function getPostSale(userId: string, id: string): Promise<PostSaleD
   const checklist = checklistRes.rows;
   const communications = communicationsRes.rows;
 
-  const stageLabel = (k: string) => POST_SALE_STAGES.find((s) => s.key === k)?.label ?? k;
+  const overrides = await getPostSaleStageOverrides(userId);
+  const stages = resolveStages(overrides);
+  const stageLabel = (k: string) => stages.find((s) => s.key === k)?.label ?? k;
   const timeline: TimelineEntry[] = [
     ...history.map((h) => ({
       kind: "etapa" as const,
@@ -273,7 +289,8 @@ export async function getPostSaleDashboardMetrics(userId: string): Promise<PostS
     [userId]
   );
   const byStage = Object.fromEntries(funnelRows.map((r) => [r.current_stage, Number(r.c)]));
-  const funnel = POST_SALE_STAGES.map((s) => ({ key: s.key, label: s.label, count: byStage[s.key] ?? 0 }));
+  const overrides = await getPostSaleStageOverrides(userId);
+  const funnel = resolveStages(overrides).map((s) => ({ key: s.key, label: s.label, count: byStage[s.key] ?? 0 }));
 
   const r = countRows[0];
   return {
@@ -288,6 +305,8 @@ export async function getPostSaleDashboardMetrics(userId: string): Promise<PostS
 export interface PublicPostSaleView {
   lead_name: string;
   current_stage: string;
+  current_stage_label: string;
+  stages: PostSaleStage[];
   is_financed: boolean;
   property_address: string | null;
   value_cents: string | null;
@@ -307,18 +326,24 @@ export async function getPostSaleByToken(token: string): Promise<PublicPostSaleV
     property_address: string | null;
     value_cents: string | null;
     property_id: string | null;
+    post_sale_stage_labels: Record<string, string> | null;
   }>(
     `SELECT ps.id, l.name AS lead_name, ps.current_stage, ps.is_financed,
-            p.address AS property_address, n.value_cents, p.id AS property_id
+            p.address AS property_address, n.value_cents, p.id AS property_id,
+            u.post_sale_stage_labels
      FROM post_sale_processes ps
      JOIN negotiations n ON n.id = ps.negotiation_id
      JOIN leads l ON l.id = n.lead_id
+     JOIN users u ON u.id = ps.user_id
      LEFT JOIN properties p ON p.id = n.property_id
      WHERE ps.referral_token = $1`,
     [token]
   );
   const ps = rows[0];
   if (!ps) return null;
+
+  const stages = resolveStages(ps.post_sale_stage_labels);
+  const currentStageLabel = stages.find((s) => s.key === ps.current_stage)?.label ?? ps.current_stage;
 
   const [{ rows: checklist }, { rows: photos }] = await Promise.all([
     db.query<{ label: string; status: string }>(
@@ -336,6 +361,8 @@ export async function getPostSaleByToken(token: string): Promise<PublicPostSaleV
   return {
     lead_name: ps.lead_name,
     current_stage: ps.current_stage,
+    current_stage_label: currentStageLabel,
+    stages,
     is_financed: ps.is_financed,
     property_address: ps.property_address,
     value_cents: ps.value_cents,
@@ -344,19 +371,32 @@ export async function getPostSaleByToken(token: string): Promise<PublicPostSaleV
   };
 }
 
-/** Cliente envia uma dúvida pelo portal público — escopado só pelo token. */
+/** Cliente envia uma dúvida pelo portal público — escopado só pelo token.
+ * Avisa o corretor na hora (notificação in-app + push), pra não ficar
+ * "escondida" só na timeline do processo. */
 export async function submitPortalQuestion(token: string, content: string): Promise<boolean> {
   const trimmed = content.trim();
   if (!trimmed) return false;
-  const { rows } = await db.query<{ id: string }>(
-    `SELECT id FROM post_sale_processes WHERE referral_token = $1`,
+  const { rows } = await db.query<{ id: string; user_id: string; lead_name: string }>(
+    `SELECT ps.id, ps.user_id, l.name AS lead_name
+     FROM post_sale_processes ps
+     JOIN negotiations n ON n.id = ps.negotiation_id
+     JOIN leads l ON l.id = n.lead_id
+     WHERE ps.referral_token = $1`,
     [token]
   );
-  if (!rows[0]) return false;
+  const ps = rows[0];
+  if (!ps) return false;
   await db.query(
     `INSERT INTO post_sale_communications (post_sale_id, kind, content) VALUES ($1, 'duvida_cliente', $2)`,
-    [rows[0].id, trimmed]
+    [ps.id, trimmed]
   );
+  const notifContent = `${ps.lead_name} enviou uma dúvida no portal de acompanhamento`;
+  await db.query(
+    `INSERT INTO notifications (user_id, type, content, related_id) VALUES ($1, 'duvida_cliente', $2, $3)`,
+    [ps.user_id, notifContent, ps.id]
+  );
+  await sendPushToUser(ps.user_id, { title: "Nova dúvida do cliente 💬", body: notifContent, url: `/pos-venda/${ps.id}` });
   return true;
 }
 

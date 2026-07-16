@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
-import { NEW_STAGE_ORDER } from "@/lib/constants";
+import { NEW_STAGE_ORDER, POST_SALE_STAGES, resolveStages } from "@/lib/constants";
 import { sendStageCompleteEmail, sendCongratsEmail } from "@/lib/resend";
 
 async function requireUserId(): Promise<string> {
@@ -71,8 +71,9 @@ export async function advancePostSaleStage(postSaleId: string, toStage: string) 
   try {
     const { rows } = await db.query<{
       email: string; lead_name: string; referral_token: string; broker_name: string;
+      post_sale_stage_labels: Record<string, string> | null;
     }>(
-      `SELECT l.email, l.name AS lead_name, ps.referral_token, u.full_name AS broker_name
+      `SELECT l.email, l.name AS lead_name, ps.referral_token, u.full_name AS broker_name, u.post_sale_stage_labels
        FROM post_sale_processes ps
        JOIN negotiations n ON n.id = ps.negotiation_id
        JOIN leads l ON l.id = n.lead_id
@@ -82,7 +83,7 @@ export async function advancePostSaleStage(postSaleId: string, toStage: string) 
     );
     const info = rows[0];
     if (info?.email) {
-      const stageLabel = toStage;
+      const stageLabel = resolveStages(info.post_sale_stage_labels).find((s) => s.key === toStage)?.label ?? toStage;
       const portalUrl = `${process.env.APP_URL}/acompanhar/${info.referral_token}`;
       if (isLastStage) {
         await sendCongratsEmail(info.email, info.lead_name, portalUrl);
@@ -320,4 +321,23 @@ export async function submitPublicReferral(referralToken: string, formData: Form
   );
 
   return { ok: true as const };
+}
+
+// ---------------------------------------------------------------- ETAPAS PERSONALIZADAS
+/** Salva os nomes personalizados das etapas do pós-venda (ver migration 019).
+ * Só guarda quem foi de fato alterado — etapa deixada igual ao padrão não
+ * entra no JSON, pra não "congelar" o nome de fábrica se ele mudar no futuro. */
+export async function updatePostSaleStageLabels(formData: FormData) {
+  const userId = await requireUserId();
+  const overrides: Record<string, string> = {};
+  for (const stage of POST_SALE_STAGES) {
+    const value = String(formData.get(`label_${stage.key}`) ?? "").trim().slice(0, 60);
+    if (value && value !== stage.label) overrides[stage.key] = value;
+  }
+  await db.query(`UPDATE users SET post_sale_stage_labels=$1 WHERE id=$2`, [
+    JSON.stringify(overrides),
+    userId,
+  ]);
+  revalidatePath("/configuracoes/pos-venda-etapas");
+  revalidatePath("/pos-venda");
 }

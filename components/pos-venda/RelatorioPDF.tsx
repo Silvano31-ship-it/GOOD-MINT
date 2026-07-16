@@ -2,7 +2,7 @@
 // "Laudo de Pós-Venda". Só server-side (importado apenas pela rota de
 // relatório) — não é uma página/componente React normal.
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import { POST_SALE_STAGES } from "@/lib/constants";
+import { POST_SALE_STAGES, type PostSaleStage } from "@/lib/constants";
 import { formatDateTime } from "@/lib/format";
 
 const styles = StyleSheet.create({
@@ -26,6 +26,7 @@ export interface RelatorioPDFProps {
   history: { to_stage: string; changed_at: string; note: string | null }[];
   checklist: { label: string; status: string }[];
   generatedAt: string;
+  stages?: readonly PostSaleStage[];
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -43,8 +44,9 @@ export function RelatorioPDF({
   history,
   checklist,
   generatedAt,
+  stages = POST_SALE_STAGES,
 }: RelatorioPDFProps) {
-  const stageLabel = (k: string) => POST_SALE_STAGES.find((s) => s.key === k)?.label ?? k;
+  const stageLabel = (k: string) => stages.find((s) => s.key === k)?.label ?? k;
 
   return (
     <Document>

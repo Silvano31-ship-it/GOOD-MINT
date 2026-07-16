@@ -3,7 +3,6 @@
 // Escopado só pelo token — ver lib/data.ts#getPostSaleByToken.
 import { notFound } from "next/navigation";
 import { getPostSaleByToken } from "@/lib/data";
-import { POST_SALE_STAGES } from "@/lib/constants";
 import { StageProgress } from "@/components/pos-venda/StageProgress";
 import { QuestionForm } from "@/components/pos-venda/QuestionForm";
 import { Logo } from "@/components/Logo";
@@ -20,7 +19,7 @@ export default async function AcompanharPage({ params }: { params: { token: stri
   const ps = await getPostSaleByToken(params.token);
   if (!ps) notFound();
 
-  const stageLabel = POST_SALE_STAGES.find((s) => s.key === ps.current_stage)?.label ?? ps.current_stage;
+  const stageLabel = ps.current_stage_label;
 
   return (
     <div className="min-h-screen bg-gm-50/40 px-4 py-8">
@@ -46,7 +45,7 @@ export default async function AcompanharPage({ params }: { params: { token: stri
           )}
 
           <div className="mt-6">
-            <StageProgress current={ps.current_stage} isFinanced={ps.is_financed} />
+            <StageProgress current={ps.current_stage} isFinanced={ps.is_financed} stages={ps.stages} />
           </div>
           <p className="mt-3 rounded-lg bg-gm-50 px-3 py-2 text-center text-sm font-medium text-gm-900">
             Etapa atual: {stageLabel}

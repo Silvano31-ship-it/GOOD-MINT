@@ -5,6 +5,7 @@
 import { renderToStream } from "@react-pdf/renderer";
 import { getSession } from "@/lib/session";
 import { db } from "@/lib/db";
+import { resolveStages } from "@/lib/constants";
 import { RelatorioPDF } from "@/components/pos-venda/RelatorioPDF";
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
@@ -16,8 +17,10 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     property_address: string | null;
     current_stage: string;
     broker_name: string;
+    post_sale_stage_labels: Record<string, string> | null;
   }>(
-    `SELECT l.name AS lead_name, p.address AS property_address, ps.current_stage, u.full_name AS broker_name
+    `SELECT l.name AS lead_name, p.address AS property_address, ps.current_stage, u.full_name AS broker_name,
+            u.post_sale_stage_labels
      FROM post_sale_processes ps
      JOIN negotiations n ON n.id = ps.negotiation_id
      JOIN leads l ON l.id = n.lead_id
@@ -28,6 +31,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   );
   const ps = rows[0];
   if (!ps) return new Response("Processo não encontrado.", { status: 404 });
+  const stages = resolveStages(ps.post_sale_stage_labels);
 
   const { rows: history } = await db.query(
     `SELECT to_stage, changed_at, note FROM post_sale_stage_history WHERE post_sale_id=$1 ORDER BY changed_at ASC`,
@@ -47,6 +51,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       history={history as any}
       checklist={checklist as any}
       generatedAt={new Date().toISOString()}
+      stages={stages}
     />
   );
 

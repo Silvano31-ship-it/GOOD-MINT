@@ -10,6 +10,7 @@ const TYPE_LABELS: Record<string, string> = {
   novo_lead: "🎯 Novo lead",
   tarefa_pendente: "✅ Tarefa pendente",
   pos_venda_parado: "📦 Cliente parado no pós-venda",
+  duvida_cliente: "💬 Dúvida do cliente",
   trial_expirando: "🎁 Trial expirando",
 };
 
