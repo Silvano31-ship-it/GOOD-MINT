@@ -9,16 +9,13 @@ export const maxDuration = 60;
 
 export default async function ConteudoChatPage() {
   const user = await requireActiveAccount();
-  const [textQuota, imageQuota] = await Promise.all([
-    getAiQuota(user.id, "texto"),
-    getAiQuota(user.id, "imagem"),
-  ]);
+  const textQuota = await getAiQuota(user.id, "texto");
 
   return (
     <div>
       <Link href="/conteudo" className="text-sm text-gm-500 hover:underline">← IA GOOD | Conteúdo</Link>
       <PageHeader title="Conversar com a IA" subtitle="Pergunte qualquer coisa relacionada ao seu trabalho de corretor." />
-      <AiChat initialTextQuota={textQuota} initialImageQuota={imageQuota} />
+      <AiChat initialTextQuota={textQuota} />
     </div>
   );
 }

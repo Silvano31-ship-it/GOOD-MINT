@@ -5,8 +5,6 @@ import { getProperties } from "@/lib/data";
 import { PageHeader } from "@/components/ui";
 import { ConteudoWizard } from "@/components/conteudo/ConteudoWizard";
 
-// Geração de imagem por IA (DALL-E) pode levar 10-20s — evita timeout da
-// Server Action nesse período.
 export const maxDuration = 60;
 
 export default async function NovoConteudoPage({
@@ -20,7 +18,7 @@ export default async function NovoConteudoPage({
   return (
     <div>
       <Link href="/conteudo" className="text-sm text-gm-500 hover:underline">← IA GOOD | Conteúdo</Link>
-      <PageHeader title="Novo conteúdo" subtitle="Gere uma legenda e, se quiser, uma imagem para o seu post." />
+      <PageHeader title="Novo conteúdo" subtitle="Gere uma legenda pronta para o seu post." />
       <ConteudoWizard properties={properties} initialPropertyId={searchParams.propertyId ?? null} />
     </div>
   );

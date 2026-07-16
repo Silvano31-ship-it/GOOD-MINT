@@ -1,4 +1,4 @@
-// components/conteudo/ConteudoWizard.tsx — assistente de 7 passos do Módulo
+// components/conteudo/ConteudoWizard.tsx — assistente de 6 passos do Módulo
 // Conteúdo com IA, tudo num único componente client (sem trocar de página a
 // cada passo).
 "use client";
@@ -9,14 +9,12 @@ import {
   AI_CONTENT_TYPES,
   AI_CONTENT_TONES,
   AI_CONTENT_POSTING_TIPS,
-  IMAGE_STYLES,
   type Property,
-  type ImageStyleKey,
 } from "@/lib/constants";
 import { formatBRL } from "@/lib/format";
-import { generateCaptionsAction, generateImageAction, saveAiContent } from "@/app/(dashboard)/conteudo/actions";
+import { generateCaptionsAction, saveAiContent } from "@/app/(dashboard)/conteudo/actions";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 export function ConteudoWizard({
   properties,
@@ -32,9 +30,6 @@ export function ConteudoWizard({
   const [tone, setTone] = useState<string>("profissional");
   const [captions, setCaptions] = useState<string[] | null>(null);
   const [chosenCaption, setChosenCaption] = useState("");
-  const [imageStyle, setImageStyle] = useState<ImageStyleKey>("fotorrealista");
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [imagePrompt, setImagePrompt] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [savedId, setSavedId] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -81,26 +76,6 @@ export function ConteudoWizard({
     });
   }
 
-  function handleGenerateImage() {
-    setError(null);
-    startTransition(async () => {
-      const res = await generateImageAction(
-        {
-          property: isImovelType && property ? { address: property.address, propertyType: property.property_type, description: property.description } : undefined,
-          subject: isImovelType ? undefined : subject,
-          style: imageStyle,
-        },
-        "gemini"
-      );
-      if (!res.ok) {
-        setError(res.error ?? "Não foi possível gerar a imagem.");
-        return;
-      }
-      setImageUrl(res.url ?? null);
-      setImagePrompt(res.prompt ?? null);
-    });
-  }
-
   function handleSave() {
     setError(null);
     startTransition(async () => {
@@ -110,9 +85,9 @@ export function ConteudoWizard({
         title: property?.address ?? subject.slice(0, 60) ?? null,
         content: chosenCaption,
         tone,
-        imageUrl,
-        imagePrompt,
-        imageStyle: imageUrl ? imageStyle : null,
+        imageUrl: null,
+        imagePrompt: null,
+        imageStyle: null,
         postTip,
       });
       setSavedId(res.id);
@@ -255,52 +230,15 @@ export function ConteudoWizard({
 
       {step === 5 && (
         <div>
-          <h2 className="mb-1 font-semibold text-gm-900">Imagem (opcional)</h2>
-          <p className="mb-3 text-sm text-gm-700/60">Escolha um estilo e gere uma imagem, ou pule esta etapa.</p>
-          <div className="mb-3 grid gap-2 sm:grid-cols-2">
-            {IMAGE_STYLES.map((s) => (
-              <button
-                key={s.key}
-                onClick={() => setImageStyle(s.key)}
-                className={`rounded-lg border p-3 text-left text-sm font-medium transition ${
-                  imageStyle === s.key ? "border-gm-500 bg-gm-50 text-gm-900" : "border-gm-200 text-gm-700 hover:bg-gm-50"
-                }`}
-              >
-                {s.label}
-              </button>
-            ))}
-          </div>
-          {imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="" className="mb-3 w-full rounded-lg" />
-          )}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={handleGenerateImage}
-              disabled={pending}
-              className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600 disabled:opacity-60"
-            >
-              {pending ? "Gerando..." : imageUrl ? "🔄 Gerar novamente" : "🖼️ Gerar imagem"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {step === 6 && (
-        <div>
           <h2 className="mb-3 font-semibold text-gm-900">Sugestão de postagem</h2>
           <div className="rounded-lg border border-gm-200 bg-gm-50 p-4 text-sm text-gm-700">{postTip}</div>
         </div>
       )}
 
-      {step === 7 && (
+      {step === 6 && (
         <div>
           <h2 className="mb-3 font-semibold text-gm-900">Revisar e salvar</h2>
           <div className="space-y-3 text-sm">
-            {imageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={imageUrl} alt="" className="w-full rounded-lg" />
-            )}
             <p className="whitespace-pre-wrap rounded-lg border border-gm-200 p-3 text-gm-900">{chosenCaption || "(sem texto)"}</p>
           </div>
         </div>
@@ -322,7 +260,7 @@ export function ConteudoWizard({
             disabled={(step === 2 && isImovelType && !propertyId) || (step === 4 && !chosenCaption.trim())}
             className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600 disabled:opacity-60"
           >
-            {step === 5 ? "Pular / Continuar →" : "Continuar →"}
+            Continuar →
           </button>
         ) : (
           <button
