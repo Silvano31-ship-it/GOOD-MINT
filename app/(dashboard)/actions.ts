@@ -25,6 +25,7 @@ async function planLimits(userId: string) {
     [userId]
   );
   if (uRows[0]?.ai_unlimited) return { lead_limit: null, property_limit: null };
+
   const { rows } = await db.query<{ lead_limit: number | null; property_limit: number | null }>(
     `SELECT p.lead_limit, p.property_limit
      FROM subscriptions s JOIN plans p ON p.id = s.plan_id
@@ -278,8 +279,8 @@ export async function createProperty(formData: FormData) {
   }
   const priceCents = Math.round(Number(String(formData.get("price") ?? "0").replace(",", ".")) * 100);
   await db.query(
-    `INSERT INTO properties (user_id, address, property_type, price_cents, area_m2, status, description)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+    `INSERT INTO properties (user_id, address, property_type, price_cents, area_m2, status, description, is_exclusive, price_alignment)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
     [
       userId,
       String(formData.get("address") ?? "").trim(),
@@ -288,6 +289,8 @@ export async function createProperty(formData: FormData) {
       String(formData.get("area_m2") ?? "") || null,
       String(formData.get("status") ?? "disponivel"),
       String(formData.get("description") ?? "") || null,
+      String(formData.get("is_exclusive") ?? "true") === "true",
+      String(formData.get("price_alignment") ?? "") || null,
     ]
   );
   revalidatePath("/imoveis");
@@ -299,8 +302,8 @@ export async function updateProperty(propertyId: string, formData: FormData) {
   const userId = await requireUserId();
   const priceCents = Math.round(Number(String(formData.get("price") ?? "0").replace(",", ".")) * 100);
   await db.query(
-    `UPDATE properties SET address=$1, property_type=$2, price_cents=$3, area_m2=$4, status=$5, description=$6
-     WHERE id=$7 AND user_id=$8`,
+    `UPDATE properties SET address=$1, property_type=$2, price_cents=$3, area_m2=$4, status=$5, description=$6, is_exclusive=$7, price_alignment=$8
+     WHERE id=$9 AND user_id=$10`,
     [
       String(formData.get("address") ?? "").trim(),
       String(formData.get("property_type") ?? "outro"),
@@ -308,6 +311,8 @@ export async function updateProperty(propertyId: string, formData: FormData) {
       String(formData.get("area_m2") ?? "") || null,
       String(formData.get("status") ?? "disponivel"),
       String(formData.get("description") ?? "") || null,
+      String(formData.get("is_exclusive") ?? "true") === "true",
+      String(formData.get("price_alignment") ?? "") || null,
       propertyId,
       userId,
     ]
