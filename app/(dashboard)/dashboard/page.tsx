@@ -11,8 +11,9 @@ import {
   getTodayTasksForDashboard,
   getEstimatedMonthlyCommission,
   getRecentMeetings,
+  getDailySuggestions,
 } from "@/lib/data";
-import { WEEKLY_LEAD_GOAL } from "@/lib/constants";
+import { WEEKLY_LEAD_GOAL, LEAD_MESSAGE_TEMPLATES } from "@/lib/constants";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { CrystalSphere } from "@/components/CrystalSphere";
 import { StatCard } from "@/components/ui";
@@ -22,7 +23,7 @@ import { FunnelChart } from "@/components/pos-venda/FunnelChart";
 export default async function DashboardHome() {
   const user = await requireActiveAccount();
   if (!user.onboarding_done) redirect("/onboarding");
-  const [counts, funnelMetrics, weeklyLeads, staleLeads, todayTasks, estimatedCommission, recentMeetings] = await Promise.all([
+  const [counts, funnelMetrics, weeklyLeads, staleLeads, todayTasks, estimatedCommission, recentMeetings, dailySuggestions] = await Promise.all([
     getCounts(user.id),
     getLeadFunnelMetrics(user.id),
     getWeeklyLeadGoalProgress(user.id),
@@ -30,6 +31,7 @@ export default async function DashboardHome() {
     getTodayTasksForDashboard(user.id),
     getEstimatedMonthlyCommission(user.id),
     getRecentMeetings(user.id),
+    getDailySuggestions(user.id),
   ]);
 
   const isEmpty =
@@ -41,6 +43,24 @@ export default async function DashboardHome() {
   return (
     <div className="space-y-8">
       <DashboardGreeting fullName={user.full_name} initialEmoji={user.dashboard_emoji} />
+
+      {/* Sugestões do dia — 2-3 ações prioritárias, pra quem não tem tempo de
+          garimpar a carteira toda procurando o que fazer primeiro. */}
+      {dailySuggestions.length > 0 && (
+        <section className="gm-card p-4">
+          <h2 className="mb-3 font-semibold text-gm-900">✨ Prioridades de hoje</h2>
+          <ul className="space-y-2">
+            {dailySuggestions.map((s, i) => (
+              <li key={i}>
+                <Link href={s.href} className="flex items-center gap-2 rounded-lg px-2 py-1.5 -mx-2 text-sm hover:bg-gm-50">
+                  <span>{s.icon}</span>
+                  <span className="text-gm-900">{s.text}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Esfera + dados flutuantes */}
       <section className="gm-radial relative overflow-hidden rounded-2xl p-6">
@@ -102,16 +122,36 @@ export default async function DashboardHome() {
             <p className="text-sm text-gm-700/50">Nenhum lead esperando retorno. 🎉</p>
           ) : (
             <ul className="space-y-2">
-              {staleLeads.map((l) => (
-                <li key={l.id}>
-                  <Link href={`/leads/${l.id}`} className="block rounded-lg px-2 py-1.5 -mx-2 text-sm hover:bg-gm-50">
-                    <span className="font-medium text-gm-900">{l.name}</span>
-                    <span className="block text-xs text-gm-700/50">
-                      {l.last_contact_at ? `Sem contato desde ${formatDateTime(l.last_contact_at)}` : "Nunca contatado"}
-                    </span>
-                  </Link>
-                </li>
-              ))}
+              {staleLeads.map((l) => {
+                const digits = l.phone?.replace(/\D/g, "");
+                const waHref = digits
+                  ? `https://wa.me/${digits}?text=${encodeURIComponent(
+                      (LEAD_MESSAGE_TEMPLATES[l.funnel_stage] ?? LEAD_MESSAGE_TEMPLATES.novo_lead)
+                        .replace("{nome}", l.name.split(" ")[0])
+                        .replace("{corretor}", user.full_name)
+                    )}`
+                  : null;
+                return (
+                  <li key={l.id} className="flex items-center gap-1 rounded-lg px-2 py-1.5 -mx-2 hover:bg-gm-50">
+                    <Link href={`/leads/${l.id}`} className="min-w-0 flex-1 text-sm">
+                      <span className="block font-medium text-gm-900">{l.name}</span>
+                      <span className="block text-xs text-gm-700/50">
+                        {l.last_contact_at ? `Sem contato desde ${formatDateTime(l.last_contact_at)}` : "Nunca contatado"}
+                      </span>
+                    </Link>
+                    {waHref && (
+                      <a
+                        href={waHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 rounded-lg bg-[#25D366] px-2 py-1 text-xs font-semibold text-white hover:opacity-90"
+                      >
+                        💬
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
           <Link href="/leads" className="mt-3 block text-xs font-medium text-gm-500 hover:underline">Ver todos os leads →</Link>

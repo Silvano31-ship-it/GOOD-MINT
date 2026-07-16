@@ -1,6 +1,7 @@
 // components/imoveis/PropertyForm.tsx — formulário de imóvel (cadastro/edição, tela 11).
 import Link from "next/link";
 import type { Property } from "@/lib/data";
+import { PRICE_ALIGNMENT_OPTIONS } from "@/lib/constants";
 
 const TYPES = [
   ["apartamento", "Apartamento"],
@@ -66,6 +67,23 @@ export function PropertyForm({
         <span className="mb-1 block text-sm font-medium text-gm-900">Descrição</span>
         <textarea name="description" rows={4} defaultValue={property?.description ?? ""} className="w-full rounded-lg border border-gm-200 px-3 py-2 text-sm" />
       </label>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-gm-900">Exclusividade</span>
+          <select name="is_exclusive" defaultValue={property ? String(property.is_exclusive) : "true"} className="w-full rounded-lg border border-gm-200 px-3 py-2 text-sm">
+            <option value="true">Exclusivo (só você anuncia)</option>
+            <option value="false">Compartilhado (outros corretores também anunciam)</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-sm font-medium text-gm-900">Alinhamento de preço</span>
+          <select name="price_alignment" defaultValue={property?.price_alignment ?? ""} className="w-full rounded-lg border border-gm-200 px-3 py-2 text-sm">
+            <option value="">Não avaliado</option>
+            {PRICE_ALIGNMENT_OPTIONS.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+          </select>
+        </label>
+      </div>
 
       <p className="text-xs text-gm-700/50">
         📷 O upload de fotos entra na próxima etapa (armazenamento de arquivos). Por

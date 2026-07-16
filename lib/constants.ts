@@ -38,6 +38,11 @@ export const PLAN_PRICING: Record<string, { monthlyCents: number; yearlyCents: n
 
 export type BillingCycle = "monthly" | "yearly";
 
+// Fluxo vigente (9 etapas). Os 4 valores legados do enum do banco
+// ('documentacao_enviada', 'analise_credito', 'aprovacao', 'registro_cartorio')
+// não aparecem mais aqui — processos antigos já foram remapeados pela
+// migration 007. `conditional: true` marca a etapa de financiamento, que só
+// é exibida/exigida quando o processo tem `is_financed = true`.
 export const POST_SALE_STAGES = [
   { key: "assinatura_contrato", label: "Assinatura do Contrato" },
   { key: "envio_documentos_cartorio", label: "Envio de Documentos ao Cartório" },
@@ -50,6 +55,7 @@ export const POST_SALE_STAGES = [
   { key: "pesquisa_satisfacao", label: "Pesquisa de Satisfação" },
 ] as const;
 
+/** Ordem linear das chaves de etapa — usada pela guarda forward-only. */
 export const NEW_STAGE_ORDER = POST_SALE_STAGES.map((s) => s.key);
 
 export const KANBAN_STATUSES = [
@@ -92,7 +98,16 @@ export interface Property {
   status: string;
   description: string | null;
   created_at: string;
+  is_exclusive: boolean;
+  price_alignment: string | null;
 }
+
+/** Opções pro campo "Alinhamento de preço" do imóvel — ajuda a identificar
+ * onde vale a pena insistir numa conversa de preço com o proprietário. */
+export const PRICE_ALIGNMENT_OPTIONS = [
+  { key: "alinhado", label: "Alinhado ao mercado" },
+  { key: "acima_mercado", label: "Acima do mercado" },
+] as const;
 
 export interface Negotiation {
   id: string;
@@ -135,8 +150,8 @@ export interface ChecklistItem {
 
 export interface Communication {
   id: string;
-  kind: string;
-  channel: string | null;
+  kind: string; // 'nota_interna' | 'mensagem_cliente'
+  channel: string | null; // 'email' | 'whatsapp' | null
   content: string;
   sent_at: string | null;
   created_at: string;
@@ -205,32 +220,6 @@ export interface Meeting {
   created_at: string;
 }
 
-/** Duas primeiras iniciais do nome, em maiúsculas (avatar de fallback). */
-export function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  const first = parts[0][0] ?? "";
-  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? "" : "";
-  return (first + last).toUpperCase();
-}
-
-/** Grupos de emoji sugeridos no seletor do Dashboard. */
-export const EMOJI_GROUPS: Record<string, string[]> = {
-  Corretor: ["🧑‍💼", "🤝", "🏠", "🔑", "📈", "💼"],
-  Motivação: ["🚀", "🔥", "💪", "🏆", "⭐", "🎯"],
-  Leve: ["😄", "☕", "🌱", "🎉", "👋", "✨"],
-};
-
-export const SUPPORT_WHATSAPP = "5592984906392";
-export const SUPPORT_PHONE_DISPLAY = "(92) 98490-6392";
-
-export const COMMISSION_RATE = 0.06;
-
-export const DEFAULT_DASHBOARD_BACKGROUND = {
-  url: "https://iz7yywkibd3e0mov.public.blob.vercel-storage.com/dashboard-bg/bb5b4446-7638-44ec-b739-e052bd6c0cb5-1784067165530.mp4",
-  type: "video" as const,
-};
-
 export interface AiContent {
   id: string;
   property_id: string | null;
@@ -296,3 +285,34 @@ export function isStale(l: Lead): boolean {
   if (!l.last_contact_at) return true;
   return Date.now() - new Date(l.last_contact_at).getTime() > STALL_DAYS * 86400000;
 }
+
+/** Duas primeiras iniciais do nome, em maiúsculas (avatar de fallback). */
+export function getInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  const first = parts[0][0] ?? "";
+  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? "" : "";
+  return (first + last).toUpperCase();
+}
+
+/** Grupos de emoji sugeridos no seletor do Dashboard. */
+export const EMOJI_GROUPS: Record<string, string[]> = {
+  Corretor: ["🧑‍💼", "🤝", "🏠", "🔑", "📈", "💼"],
+  Motivação: ["🚀", "🔥", "💪", "🏆", "⭐", "🎯"],
+  Leve: ["😄", "☕", "🌱", "🎉", "👋", "✨"],
+};
+
+/** Número oficial de suporte (WhatsApp), usado na tela de Suporte e no rodapé. */
+export const SUPPORT_WHATSAPP = "5592984906392";
+export const SUPPORT_PHONE_DISPLAY = "(92) 98490-6392";
+
+/** Comissão estimada exibida nos totais das planilhas de Imóveis e Negociações. */
+export const COMMISSION_RATE = 0.06;
+
+/** Fundo padrão do Dashboard pra quem se cadastra a partir de agora — o
+ * corretor pode trocar ou remover a qualquer momento em Configurações →
+ * Personalizar Fundo (não afeta quem já tinha conta antes disso). */
+export const DEFAULT_DASHBOARD_BACKGROUND = {
+  url: "https://iz7yywkibd3e0mov.public.blob.vercel-storage.com/dashboard-bg/bb5b4446-7638-44ec-b739-e052bd6c0cb5-1784067165530.mp4",
+  type: "video" as const,
+};

@@ -55,6 +55,14 @@ export default async function ImoveisPage({ searchParams }: { searchParams: { li
                 <span className="font-bold text-gm-900">{formatBRL(Number(p.price_cents))}</span>
                 {p.area_m2 && <span>· {Number(p.area_m2)} m²</span>}
               </div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${p.is_exclusive ? "bg-green-50 text-green-700" : "bg-amber-50 text-amber-700"}`}>
+                  {p.is_exclusive ? "🔒 Exclusivo" : "⚠️ Compartilhado"}
+                </span>
+                {p.price_alignment === "acima_mercado" && (
+                  <span className="rounded bg-red-50 px-1.5 py-0.5 text-[11px] font-medium text-red-700">💰 Acima do mercado</span>
+                )}
+              </div>
             </Link>
           ))}
         </div>

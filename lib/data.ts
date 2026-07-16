@@ -84,7 +84,7 @@ export async function getLead(userId: string, id: string): Promise<Lead | null> 
 
 export async function getProperties(userId: string): Promise<Property[]> {
   const { rows } = await db.query<Property>(
-    `SELECT id, address, property_type, price_cents, area_m2, status, description, created_at
+    `SELECT id, address, property_type, price_cents, area_m2, status, description, created_at, is_exclusive, price_alignment
      FROM properties WHERE user_id = $1 ORDER BY created_at DESC`,
     [userId]
   );
@@ -93,7 +93,7 @@ export async function getProperties(userId: string): Promise<Property[]> {
 
 export async function getProperty(userId: string, id: string): Promise<Property | null> {
   const { rows } = await db.query<Property>(
-    `SELECT id, address, property_type, price_cents, area_m2, status, description, created_at
+    `SELECT id, address, property_type, price_cents, area_m2, status, description, created_at, is_exclusive, price_alignment
      FROM properties WHERE user_id = $1 AND id = $2`,
     [userId, id]
   );
@@ -404,6 +404,55 @@ export async function getRecentMeetings(userId: string): Promise<{ id: string; t
     [userId]
   );
   return rows;
+}
+
+export interface DailySuggestion {
+  icon: string;
+  text: string;
+  href: string;
+}
+
+/** Sugestões priorizadas do dia (regras simples, sem IA — rápido e sem
+ * depender de chave/custo externo): 1 lead parado pra contatar, 1 imóvel
+ * acima do mercado pra conversar preço com o proprietário, 1 tarefa
+ * pendente mais urgente. Ataca a dor de "falta de tempo pra prospectar",
+ * dando um ponto de partida claro em vez de exigir garimpar a carteira. */
+export async function getDailySuggestions(userId: string): Promise<DailySuggestion[]> {
+  const suggestions: DailySuggestion[] = [];
+
+  const staleLeads = await getStaleLeadsForDashboard(userId);
+  if (staleLeads[0]) {
+    suggestions.push({
+      icon: "📞",
+      text: `Contatar ${staleLeads[0].name} (sem retorno recente)`,
+      href: `/leads/${staleLeads[0].id}`,
+    });
+  }
+
+  const { rows: overpriced } = await db.query<{ id: string; address: string }>(
+    `SELECT id, address FROM properties
+     WHERE user_id = $1 AND is_active AND price_alignment = 'acima_mercado'
+     ORDER BY created_at ASC LIMIT 1`,
+    [userId]
+  );
+  if (overpriced[0]) {
+    suggestions.push({
+      icon: "💬",
+      text: `Conversar sobre o preço de "${overpriced[0].address}" com o proprietário`,
+      href: `/imoveis/${overpriced[0].id}`,
+    });
+  }
+
+  const { rows: tasks } = await db.query<{ id: string; title: string }>(
+    `SELECT id, title FROM tasks WHERE user_id = $1 AND done = false
+     ORDER BY due_at ASC NULLS LAST, created_at ASC LIMIT 1`,
+    [userId]
+  );
+  if (tasks[0]) {
+    suggestions.push({ icon: "✅", text: tasks[0].title, href: "/tarefas" });
+  }
+
+  return suggestions.slice(0, 3);
 }
 
 export async function getUrgentPostSaleTasks(userId: string) {
