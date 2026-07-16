@@ -80,9 +80,10 @@ export async function createLead(
     }
   }
 
-  await db.query(
+  const { rows: inserted } = await db.query<{ id: string }>(
     `INSERT INTO leads (user_id, name, phone, email, origin, notes, funnel_stage, last_contact_at, estimated_value_cents)
-     VALUES ($1,$2,$3,$4,$5,$6,'novo_lead', now(), $7)`,
+     VALUES ($1,$2,$3,$4,$5,$6,'novo_lead', now(), $7)
+     RETURNING id`,
     [
       userId,
       name,
@@ -92,6 +93,10 @@ export async function createLead(
       String(formData.get("notes") ?? "") || null,
       parseEstimatedValueCents(formData.get("estimated_value")),
     ]
+  );
+  await db.query(
+    `INSERT INTO notifications (user_id, type, content, related_id) VALUES ($1, 'novo_lead', $2, $3)`,
+    [userId, `Novo lead cadastrado: ${name}`, inserted[0].id]
   );
   revalidatePath("/leads");
   revalidatePath("/dashboard");

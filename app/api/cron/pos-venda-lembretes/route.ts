@@ -61,13 +61,30 @@ export async function GET(req: Request) {
     await db.query(`UPDATE post_sale_reminders SET sent_at=now() WHERE id=$1`, [r.id]);
   }
 
-  // 3) marca alerta de "parado" para processos sem avanço há mais de 5 dias
-  const { rowCount: stalledCount } = await db.query(
-    `UPDATE post_sale_processes SET stalled_alert_sent_at=now()
-     WHERE current_stage <> 'pesquisa_satisfacao'
-       AND stage_updated_at < now() - interval '5 days'
-       AND (stalled_alert_sent_at IS NULL OR stalled_alert_sent_at < stage_updated_at)`
+  // 3) marca alerta de "parado" para processos sem avanço há mais de 5 dias e
+  // cria uma notificação in-app (uma vez só por processo, ver migration 017).
+  const { rows: newlyStalled } = await db.query<{
+    id: string;
+    user_id: string;
+    lead_name: string;
+    current_stage: string;
+  }>(
+    `UPDATE post_sale_processes ps SET stalled_alert_sent_at=now()
+     FROM negotiations n JOIN leads l ON l.id = n.lead_id
+     WHERE ps.negotiation_id = n.id
+       AND ps.current_stage <> 'pesquisa_satisfacao'
+       AND ps.stage_updated_at < now() - interval '5 days'
+       AND (ps.stalled_alert_sent_at IS NULL OR ps.stalled_alert_sent_at < ps.stage_updated_at)
+       AND NOT EXISTS (SELECT 1 FROM notifications nn WHERE nn.type = 'pos_venda_parado' AND nn.related_id = ps.id)
+     RETURNING ps.id, ps.user_id, l.name AS lead_name, ps.current_stage`
   );
+  for (const p of newlyStalled) {
+    const stageLabel = POST_SALE_STAGES.find((s) => s.key === p.current_stage)?.label ?? p.current_stage;
+    await db.query(
+      `INSERT INTO notifications (user_id, type, content, related_id) VALUES ($1, 'pos_venda_parado', $2, $3)`,
+      [p.user_id, `Cliente ${p.lead_name} parado há mais de 5 dias em "${stageLabel}"`, p.id]
+    );
+  }
 
-  return NextResponse.json({ ok: true, remindersSent: sent, stalledMarked: stalledCount });
+  return NextResponse.json({ ok: true, remindersSent: sent, stalledMarked: newlyStalled.length });
 }

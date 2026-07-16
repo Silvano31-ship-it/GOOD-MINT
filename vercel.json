@@ -2,6 +2,7 @@
   "crons": [
     { "path": "/api/cron/social", "schedule": "*/5 * * * *" },
     { "path": "/api/cron/pos-venda-lembretes", "schedule": "0 12 * * *" },
-    { "path": "/api/cron/cobranca-lembretes", "schedule": "0 13 * * *" }
+    { "path": "/api/cron/cobranca-lembretes", "schedule": "0 13 * * *" },
+    { "path": "/api/cron/notificacoes-tarefas", "schedule": "0 9 * * *" }
   ]
 }
