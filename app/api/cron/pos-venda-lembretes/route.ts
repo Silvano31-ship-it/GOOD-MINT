@@ -1,14 +1,10 @@
 // app/api/cron/pos-venda-lembretes/route.ts — GET
-// Roda diariamente (ver vercel.json). Protegido por CRON_SECRET, mesmo padrão
-// de app/api/cron/social/route.ts. Três tarefas:
-// 1) cria lembretes 3 dias antes de next_action_due_at (se ainda não existir um);
-// 2) envia por e-mail os lembretes vencidos e ainda não enviados;
-// 3) marca stalled_alert_sent_at para processos parados há mais de 5 dias.
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { sendDeadlineReminderEmail } from "@/lib/resend";
 import { POST_SALE_STAGES } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
+import { sendPushToUser } from "@/lib/push";
 
 export async function GET(req: Request) {
   const authHeader = req.headers.get("authorization");
@@ -16,7 +12,6 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
   }
 
-  // 1) cria lembretes de prazo (3 dias antes) que ainda não existem
   await db.query(
     `INSERT INTO post_sale_reminders (post_sale_id, kind, due_at)
      SELECT ps.id, 'prazo_3_dias', ps.next_action_due_at - interval '3 days'
@@ -29,7 +24,6 @@ export async function GET(req: Request) {
        )`
   );
 
-  // 2) envia lembretes vencidos e ainda não enviados
   const { rows: due } = await db.query<{
     id: string;
     post_sale_id: string;
@@ -61,8 +55,6 @@ export async function GET(req: Request) {
     await db.query(`UPDATE post_sale_reminders SET sent_at=now() WHERE id=$1`, [r.id]);
   }
 
-  // 3) marca alerta de "parado" para processos sem avanço há mais de 5 dias e
-  // cria uma notificação in-app (uma vez só por processo, ver migration 017).
   const { rows: newlyStalled } = await db.query<{
     id: string;
     user_id: string;
@@ -80,10 +72,12 @@ export async function GET(req: Request) {
   );
   for (const p of newlyStalled) {
     const stageLabel = POST_SALE_STAGES.find((s) => s.key === p.current_stage)?.label ?? p.current_stage;
+    const content = `Cliente ${p.lead_name} parado há mais de 5 dias em "${stageLabel}"`;
     await db.query(
       `INSERT INTO notifications (user_id, type, content, related_id) VALUES ($1, 'pos_venda_parado', $2, $3)`,
-      [p.user_id, `Cliente ${p.lead_name} parado há mais de 5 dias em "${stageLabel}"`, p.id]
+      [p.user_id, content, p.id]
     );
+    await sendPushToUser(p.user_id, { title: "Cliente parado no pós-venda 📦", body: content, url: `/pos-venda/${p.id}` });
   }
 
   return NextResponse.json({ ok: true, remindersSent: sent, stalledMarked: newlyStalled.length });

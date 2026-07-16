@@ -12,6 +12,7 @@ import { cancelSubscription as cancelAsaasSubscription, updateSubscriptionPlan }
 import { SUPPORT_WHATSAPP, PLAN_PRICING } from "@/lib/constants";
 import { buildOAuthUrl, publishFacebookPost, publishInstagramPost } from "@/lib/meta";
 import { publishTiktokPost } from "@/lib/tiktok";
+import { sendPushToUser } from "@/lib/push";
 
 async function requireUserId(): Promise<string> {
   const session = await getSession();
@@ -98,6 +99,7 @@ export async function createLead(
     `INSERT INTO notifications (user_id, type, content, related_id) VALUES ($1, 'novo_lead', $2, $3)`,
     [userId, `Novo lead cadastrado: ${name}`, inserted[0].id]
   );
+  await sendPushToUser(userId, { title: "Novo lead 🎯", body: name, url: `/leads/${inserted[0].id}` });
   revalidatePath("/leads");
   revalidatePath("/dashboard");
   return { ok: true };
@@ -184,8 +186,6 @@ export async function updateLeadField(leadId: string, field: string, value: stri
   revalidatePath(`/leads/${leadId}`);
 }
 
-// Wrappers finos com assinatura (id, valor) — passados direto como onSave das
-// células editáveis da planilha, sem precisar de closures inline no server component.
 export async function updateLeadName(id: string, value: string) { return updateLeadField(id, "name", value); }
 export async function updateLeadEstimatedValue(id: string, value: string) { return updateLeadField(id, "estimated_value_cents", value); }
 export async function updateLeadPhone(id: string, value: string) { return updateLeadField(id, "phone", value); }
@@ -508,8 +508,6 @@ export async function updateNegotiationField(negotiationId: string, field: strin
 export async function updateNegotiationValue(id: string, value: string) { return updateNegotiationField(id, "value_cents", value); }
 export async function updateNegotiationStatus(id: string, value: string) { return updateNegotiationField(id, "status", value); }
 
-/** Sem coluna is_active em negotiations (diferente de leads/properties) — exclusão
- * é definitiva aqui, usada hoje só pelo "Remover duplicados" da planilha. */
 export async function bulkDeleteNegotiations(ids: string[]) {
   const userId = await requireUserId();
   if (ids.length === 0) return;
@@ -518,10 +516,6 @@ export async function bulkDeleteNegotiations(ids: string[]) {
   revalidatePath("/negociacoes");
   revalidatePath("/dashboard");
 }
-
-// Ações de pós-venda (avançar/corrigir etapa, checklist, comunicação, kanban,
-// indicação) vivem em app/(dashboard)/pos-venda/actions.ts — arquivo próprio,
-// separado deste (que já cobria 6 módulos) para não inchar mais.
 
 // ---------------------------------------------------------------- TAREFAS
 export async function createTask(formData: FormData) {
@@ -542,11 +536,6 @@ export async function toggleTask(taskId: string, done: boolean) {
 }
 
 // ---------------------------------------------------------------- CENTRAL DE MENSAGENS
-// Fase 1 do lançamento (seção 10 da spec): a conexão real de canais depende
-// de aprovação de negócio da Meta (WhatsApp/Instagram/Facebook) e validação
-// técnica da API do TikTok — nenhuma delas está disponível nesta fase. Este
-// botão registra a intenção de conectar; a integração real (OAuth com o
-// canal) entra quando essas aprovações existirem.
 export async function requestChannelConnection(channel: string) {
   const userId = await requireUserId();
   await db.query(
@@ -558,9 +547,6 @@ export async function requestChannelConnection(channel: string) {
   revalidatePath("/configuracoes/integracoes");
 }
 
-/** Inicia o fluxo OAuth do Meta (Instagram/Facebook). Navegação de página
- * inteira até o Meta — por isso é o único caso que usa redirect() de verdade
- * em vez de retornar dados pro client. */
 export async function startMetaOAuth(channel: "instagram" | "facebook") {
   const userId = await requireUserId();
   const redirectUri = `${process.env.APP_URL}/api/oauth/meta/callback`;
@@ -594,8 +580,6 @@ export async function saveBotConfig(formData: FormData) {
 }
 
 // ---------------------------------------------------------------- PLANO E COBRANÇA
-/** Cancela a assinatura no Asaas e marca localmente; acesso segue até o fim
- * do período já pago (seção 11 da spec — sem corte imediato). */
 export async function cancelMySubscription() {
   const userId = await requireUserId();
   const { rows } = await db.query<{ id: string; gateway_subscription_id: string | null }>(
@@ -620,9 +604,6 @@ export async function cancelMySubscription() {
 const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro", "mint_business"]);
 const VALID_BILLING_CYCLES = new Set(["monthly", "yearly"]);
 
-/** Troca de plano e/ou ciclo de cobrança pra quem já tem cartão ativo (fluxo
- * diferente de `cancelMySubscription`/`SubscribeForm`, que são pra antes de ter
- * cartão). Atualiza o valor cobrado direto na assinatura do Asaas. */
 export async function changePlanAndCycle(planCode: string, billingCycle: string) {
   const userId = await requireUserId();
   if (!VALID_PLAN_CODES.has(planCode) || !VALID_BILLING_CYCLES.has(billingCycle)) return;
@@ -682,7 +663,6 @@ export async function completeOnboarding() {
   revalidatePath("/dashboard");
 }
 
-/** Remove o fundo personalizado do Dashboard, voltando ao padrão. */
 export async function resetDashboardBackground() {
   const userId = await requireUserId();
   await db.query(`UPDATE users SET background_url=NULL, background_type=NULL WHERE id=$1`, [
@@ -693,9 +673,6 @@ export async function resetDashboardBackground() {
 }
 
 // ---------------------------------------------------------------- SUPORTE
-/** Grava o ticket e devolve o link do WhatsApp — não usa redirect() porque
- * precisamos abrir o WhatsApp numa aba nova a partir do client, e não navegar
- * o próprio app para fora. */
 export async function createSupportTicket(formData: FormData): Promise<{ waUrl: string }> {
   const userId = await requireUserId();
   const category = String(formData.get("category") ?? "").trim();
@@ -723,9 +700,6 @@ export async function createSupportTicket(formData: FormData): Promise<{ waUrl: 
 }
 
 // ---------------------------------------------------------------- SOCIAL
-/** Publica agora (chama a API do canal direto) ou agenda (grava para o cron
- * processar depois). Sempre registra o resultado em scheduled_posts, mesmo
- * quando é "agora", para aparecer em Minhas publicações. */
 export async function createPost(
   formData: FormData
 ): Promise<{ ok: boolean; error?: string }> {

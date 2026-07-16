@@ -4,6 +4,7 @@ import { requireActiveAccount } from "@/lib/account-guard";
 import { getNotifications } from "@/lib/data";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { formatDateTime } from "@/lib/format";
+import { PushSetup } from "@/components/PushSetup";
 
 const TYPE_LABELS: Record<string, string> = {
   novo_lead: "🎯 Novo lead",
@@ -20,6 +21,10 @@ export default async function NotificacoesPage() {
     <div>
       <Link href="/configuracoes" className="text-sm text-gm-500 hover:underline">← Configurações</Link>
       <PageHeader title="Notificações" subtitle="Novo lead, tarefa pendente e cliente parado em etapa do pós-venda." />
+
+      <div className="mb-6">
+        <PushSetup vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? null} />
+      </div>
 
       {notifications.length === 0 ? (
         <EmptyState icon="🔔" title="Nenhuma notificação" desc="Você será avisado aqui sobre novos leads, tarefas e alertas do pós-venda." />

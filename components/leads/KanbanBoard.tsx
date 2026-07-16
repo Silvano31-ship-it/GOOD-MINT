@@ -18,7 +18,6 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
   function moveLead(id: string, stage: string) {
     const lead = leads.find((l) => l.id === id);
     if (!lead || lead.funnel_stage === stage) return;
-    // otimista
     setLeads((prev) =>
       prev.map((l) => (l.id === id ? { ...l, funnel_stage: stage } : l))
     );
@@ -37,7 +36,7 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
   }
 
   return (
-    <div className="gm-scroll flex flex-col gap-4 pb-4 sm:flex-row sm:overflow-x-auto">
+    <div className="gm-scroll flex flex-col gap-4 pb-4 lg:flex-row lg:overflow-x-auto">
       {LEAD_STAGES.map((stage) => {
         const items = leads.filter((l) => l.funnel_stage === stage.key);
         return (
@@ -49,7 +48,7 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
             }}
             onDragLeave={() => setOverCol((c) => (c === stage.key ? null : c))}
             onDrop={() => onDrop(stage.key)}
-            className={`flex w-full flex-col rounded-xl border p-3 transition sm:w-72 sm:flex-none ${
+            className={`flex w-full flex-col rounded-xl border p-3 transition lg:w-72 lg:flex-none ${
               overCol === stage.key
                 ? "border-gm-400 bg-gm-50"
                 : "border-gm-100 bg-white"
@@ -93,14 +92,13 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
                       </span>
                     )}
                   </Link>
-                  {/* Fallback pra telas pequenas, onde arrastar é ruim de usar. */}
                   <select
                     aria-label="Mover para..."
                     value=""
                     onChange={(e) => {
                       if (e.target.value) moveLead(lead.id, e.target.value);
                     }}
-                    className="mt-2 min-h-9 w-full rounded-lg border border-gm-200 bg-white px-2 py-1 text-xs sm:hidden"
+                    className="mt-2 min-h-9 w-full rounded-lg border border-gm-200 bg-white px-2 py-1 text-xs lg:hidden"
                   >
                     <option value="">Mover para...</option>
                     {LEAD_STAGES.filter((s) => s.key !== lead.funnel_stage).map((s) => (
