@@ -84,11 +84,14 @@ export function ConteudoWizard({
   function handleGenerateImage() {
     setError(null);
     startTransition(async () => {
-      const res = await generateImageAction({
-        property: isImovelType && property ? { address: property.address, propertyType: property.property_type, description: property.description } : undefined,
-        subject: isImovelType ? undefined : subject,
-        style: imageStyle,
-      });
+      const res = await generateImageAction(
+        {
+          property: isImovelType && property ? { address: property.address, propertyType: property.property_type, description: property.description } : undefined,
+          subject: isImovelType ? undefined : subject,
+          style: imageStyle,
+        },
+        "gemini"
+      );
       if (!res.ok) {
         setError(res.error ?? "Não foi possível gerar a imagem.");
         return;

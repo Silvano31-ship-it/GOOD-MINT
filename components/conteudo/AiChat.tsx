@@ -4,7 +4,7 @@
 "use client";
 
 import { useState } from "react";
-import { sendChatMessageAction, generateImageAction, type ImageProvider } from "@/app/(dashboard)/conteudo/actions";
+import { sendChatMessageAction, generateImageAction } from "@/app/(dashboard)/conteudo/actions";
 import type { AiQuotaStatus } from "@/lib/ai-quota";
 import { IMAGE_STYLES, type ImageStyleKey } from "@/lib/constants";
 
@@ -28,18 +28,14 @@ export function AiChat({
 }) {
   const [items, setItems] = useState<ChatItem[]>([]);
   const [input, setInput] = useState("");
+  const [mode, setMode] = useState<"texto" | "imagem">("texto");
   const [imageStyle, setImageStyle] = useState<ImageStyleKey>("fotorrealista");
-  const [imageProvider, setImageProvider] = useState<ImageProvider>("openai");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [textQuota, setTextQuota] = useState(initialTextQuota);
   const [imageQuota, setImageQuota] = useState(initialImageQuota);
 
-  async function handleSendText() {
-    const text = input.trim();
-    if (!text || sending) return;
-    setError(null);
-    setInput("");
+  async function handleSendText(text: string) {
     const nextItems: ChatItem[] = [...items, { role: "user", kind: "texto", content: text }];
     setItems(nextItems);
     setSending(true);
@@ -49,6 +45,9 @@ export function AiChat({
         .map((i) => ({ role: i.role, content: i.content! }));
       const res = await sendChatMessageAction(history);
       if (!res.ok) {
+        // Desfaz a mensagem otimista — se ela ficasse sem resposta no
+        // histórico, a próxima tentativa mandaria duas mensagens "user"
+        // seguidas pra Claude, que exige alternância estrita e rejeitaria.
         setItems((prev) => prev.slice(0, -1));
         setInput(text);
         setError(res.error ?? "Não foi possível responder agora.");
@@ -61,15 +60,11 @@ export function AiChat({
     }
   }
 
-  async function handleSendImage() {
-    const text = input.trim();
-    if (!text || sending) return;
-    setError(null);
-    setInput("");
+  async function handleSendImage(text: string) {
     setItems((prev) => [...prev, { role: "user", kind: "imagem", content: `🖼️ ${text}` }]);
     setSending(true);
     try {
-      const res = await generateImageAction({ subject: text, style: imageStyle }, imageProvider);
+      const res = await generateImageAction({ subject: text, style: imageStyle }, "gemini");
       if (!res.ok) {
         setError(res.error ?? "Não foi possível gerar a imagem agora.");
         return;
@@ -78,6 +73,18 @@ export function AiChat({
       setImageQuota((q) => ({ ...q, used: q.used + 1, exceeded: q.limit !== null && q.used + 1 >= q.limit }));
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleSend() {
+    const text = input.trim();
+    if (!text || sending) return;
+    setError(null);
+    setInput("");
+    if (mode === "imagem") {
+      await handleSendImage(text);
+    } else {
+      await handleSendText(text);
     }
   }
 
@@ -95,7 +102,7 @@ export function AiChat({
       <div className="gm-scroll flex min-h-[320px] flex-col gap-3 overflow-y-auto rounded-lg border border-gm-100 p-3">
         {items.length === 0 && (
           <p className="m-auto max-w-xs text-center text-sm text-gm-700/50">
-            Pergunte qualquer coisa relacionada ao seu trabalho de corretor — dicas, mensagens pra clientes, textos, ideias. Ou escreva uma descrição e clique em "Gerar imagem".
+            Pergunte qualquer coisa relacionada ao seu trabalho de corretor — dicas, mensagens pra clientes, textos, ideias. Ou escolha "Imagem" abaixo e descreva a foto que quer gerar.
           </p>
         )}
         {items.map((item, i) => (
@@ -114,52 +121,55 @@ export function AiChat({
             </div>
           </div>
         ))}
-        {sending && <div className="text-xs text-gm-700/40">Pensando...</div>}
+        {sending && <div className="text-xs text-gm-700/40">{mode === "imagem" ? "Gerando imagem..." : "Pensando..."}</div>}
       </div>
 
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
       <div className="mt-3 space-y-2">
+        <div className="flex gap-2">
+          <button
+            onClick={() => setMode("texto")}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+              mode === "texto" ? "border-gm-500 bg-gm-50 text-gm-900" : "border-gm-200 text-gm-700 hover:bg-gm-50"
+            }`}
+          >
+            💬 Pergunta
+          </button>
+          <button
+            onClick={() => setMode("imagem")}
+            className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+              mode === "imagem" ? "border-gm-500 bg-gm-50 text-gm-900" : "border-gm-200 text-gm-700 hover:bg-gm-50"
+            }`}
+          >
+            🖼️ Imagem
+          </button>
+          {mode === "imagem" && (
+            <select
+              value={imageStyle}
+              onChange={(e) => setImageStyle(e.target.value as ImageStyleKey)}
+              className="ml-auto rounded-lg border border-gm-200 px-2 py-1.5 text-xs text-gm-700 outline-none focus:border-gm-500"
+            >
+              {IMAGE_STYLES.map((s) => (
+                <option key={s.key} value={s.key}>{s.label}</option>
+              ))}
+            </select>
+          )}
+        </div>
         <textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           rows={3}
-          placeholder="Escreva sua pergunta ou pedido..."
+          placeholder={mode === "imagem" ? "Descreva a imagem que você quer gerar..." : "Escreva sua pergunta ou pedido..."}
           className="w-full rounded-lg border border-gm-200 px-3 py-2 text-sm outline-none focus:border-gm-500"
         />
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={imageProvider}
-            onChange={(e) => setImageProvider(e.target.value as ImageProvider)}
-            className="rounded-lg border border-gm-200 px-2 py-1.5 text-xs text-gm-700 outline-none focus:border-gm-500"
-          >
-            <option value="openai">OpenAI (DALL-E)</option>
-            <option value="gemini">Google Gemini</option>
-          </select>
-          <select
-            value={imageStyle}
-            onChange={(e) => setImageStyle(e.target.value as ImageStyleKey)}
-            className="rounded-lg border border-gm-200 px-2 py-1.5 text-xs text-gm-700 outline-none focus:border-gm-500"
-          >
-            {IMAGE_STYLES.map((s) => (
-              <option key={s.key} value={s.key}>{s.label}</option>
-            ))}
-          </select>
-          <button
-            onClick={handleSendImage}
-            disabled={sending || !input.trim()}
-            className="rounded-lg border border-gm-200 px-3 py-1.5 text-xs font-medium text-gm-700 hover:bg-gm-50 disabled:opacity-60"
-          >
-            🖼️ Gerar imagem
-          </button>
-          <button
-            onClick={handleSendText}
-            disabled={sending || !input.trim()}
-            className="ml-auto rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600 disabled:opacity-60"
-          >
-            Enviar
-          </button>
-        </div>
+        <button
+          onClick={handleSend}
+          disabled={sending || !input.trim()}
+          className="w-full rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600 disabled:opacity-60"
+        >
+          Enviar
+        </button>
       </div>
     </div>
   );
