@@ -338,6 +338,7 @@ export async function updatePostSaleStageLabels(formData: FormData) {
     JSON.stringify(overrides),
     userId,
   ]);
-  revalidatePath("/configuracoes/pos-venda-etapas");
   revalidatePath("/pos-venda");
+  revalidatePath("/pos-venda/dashboard");
+  redirect("/pos-venda/etapas?salvo=1");
 }

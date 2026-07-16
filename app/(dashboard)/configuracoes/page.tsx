@@ -13,7 +13,6 @@ const SECTIONS = [
   { href: "/configuracoes/notificacoes", icon: "🔔", title: "Notificações", desc: "O que você recebe e onde" },
   { href: "/configuracoes/integracoes", icon: "🔌", title: "Integrações", desc: "WhatsApp, Instagram, Facebook, TikTok" },
   { href: "/configuracoes/bot", icon: "🤖", title: "Bot de IA", desc: "Tom de voz, horários, mensagens automáticas" },
-  { href: "/configuracoes/pos-venda-etapas", icon: "🏷️", title: "Etapas do Pós-Venda", desc: "Renomeie as etapas do processo" },
   { href: "/configuracoes/fundo", icon: "🖼️", title: "Personalizar Fundo", desc: "Foto ou vídeo de fundo do Dashboard" },
 ];
 

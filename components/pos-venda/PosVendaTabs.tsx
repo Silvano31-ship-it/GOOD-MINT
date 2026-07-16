@@ -1,6 +1,6 @@
-// components/pos-venda/PosVendaTabs.tsx — navegação entre Kanban e Dashboard do
-// pós-venda. Mesmo padrão de components/social/SocialTabs.tsx (tabs por rota,
-// já que são telas de fato bookmarkáveis).
+// components/pos-venda/PosVendaTabs.tsx — navegação entre Kanban, Dashboard e
+// Etapas do pós-venda. Mesmo padrão de components/social/SocialTabs.tsx (tabs
+// por rota, já que são telas de fato bookmarkáveis).
 "use client";
 
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/pos-venda", label: "Kanban" },
   { href: "/pos-venda/dashboard", label: "Dashboard" },
+  { href: "/pos-venda/etapas", label: "Etapas" },
 ];
 
 export function PosVendaTabs() {
