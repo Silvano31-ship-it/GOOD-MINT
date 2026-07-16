@@ -6,7 +6,6 @@ export const metadata: Metadata = {
   title: "GOOD MINT — CRM para corretores de imóveis",
   description:
     "Organize seus leads e imóveis e acompanhe o cliente até depois da venda. Pré-venda e pós-venda num só lugar. Teste grátis de 3 dias.",
-  manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -37,6 +36,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <head>
+        <link rel="manifest" href="/manifest.json" />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="min-h-screen bg-gm-50 text-gm-900 antialiased">
