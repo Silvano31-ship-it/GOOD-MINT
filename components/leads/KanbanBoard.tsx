@@ -37,7 +37,7 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
   }
 
   return (
-    <div className="gm-scroll flex gap-4 overflow-x-auto pb-4">
+    <div className="gm-scroll flex flex-col gap-4 pb-4 sm:flex-row sm:overflow-x-auto">
       {LEAD_STAGES.map((stage) => {
         const items = leads.filter((l) => l.funnel_stage === stage.key);
         return (
@@ -49,7 +49,7 @@ export function KanbanBoard({ initialLeads }: { initialLeads: Lead[] }) {
             }}
             onDragLeave={() => setOverCol((c) => (c === stage.key ? null : c))}
             onDrop={() => onDrop(stage.key)}
-            className={`flex w-72 flex-none flex-col rounded-xl border p-3 transition ${
+            className={`flex w-full flex-col rounded-xl border p-3 transition sm:w-72 sm:flex-none ${
               overCol === stage.key
                 ? "border-gm-400 bg-gm-50"
                 : "border-gm-100 bg-white"
