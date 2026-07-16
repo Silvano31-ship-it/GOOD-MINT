@@ -4,6 +4,7 @@ import { getNegotiations, getLeadOptions, getPropertyOptions } from "@/lib/data"
 import { PageHeader, EmptyState, Badge } from "@/components/ui";
 import { NewNegotiationButton } from "@/components/negociacoes/NewNegotiationButton";
 import { CloseNegotiation } from "@/components/negociacoes/CloseNegotiation";
+import { DeleteNegotiation } from "@/components/negociacoes/DeleteNegotiation";
 import { formatBRL, formatDate } from "@/lib/format";
 
 const STATUS_LABELS: Record<string, string> = { aberta: "Aberta", fechada: "Fechada", perdida: "Perdida" };
@@ -49,11 +50,14 @@ export default async function NegociacoesPage() {
                     <td className="px-4 py-3">{formatBRL(n.value_cents ? Number(n.value_cents) : null)}</td>
                     <td className="px-4 py-3"><Badge value={n.status} label={STATUS_LABELS[n.status] ?? n.status} /></td>
                     <td className="px-4 py-3">
-                      {n.status === "aberta" ? (
-                        <CloseNegotiation negotiationId={n.id} />
-                      ) : (
-                        <span className="text-xs text-gm-700/40">Fechada em {formatDate(n.closed_at)}</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {n.status === "aberta" ? (
+                          <CloseNegotiation negotiationId={n.id} />
+                        ) : (
+                          <span className="text-xs text-gm-700/40">Fechada em {formatDate(n.closed_at)}</span>
+                        )}
+                        <DeleteNegotiation negotiationId={n.id} />
+                      </div>
                     </td>
                   </tr>
                 ))}
