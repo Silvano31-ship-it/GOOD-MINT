@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Logo } from "./Logo";
+import { NotificationBell } from "./NotificationBell";
 
 const NAV = [
   { href: "/dashboard", label: "Visão Geral", icon: "📊" },
@@ -19,6 +20,8 @@ const NAV = [
   { href: "/tarefas", label: "Tarefas", icon: "✅" },
   { href: "/mensagens", label: "Central de Mensagens", icon: "💬" },
   { href: "/social", label: "Social", icon: "📣" },
+  { href: "/configuracoes/plano", label: "Plano e Cobrança", icon: "💳" },
+  { href: "/configuracoes/notificacoes", label: "Notificações", icon: "🔔" },
   { href: "/suporte", label: "Suporte", icon: "🆘" },
   { href: "/configuracoes", label: "Configurações", icon: "⚙️" },
 ];
@@ -75,15 +78,18 @@ export function Sidebar({ transparent }: { transparent?: boolean }) {
           }`}
         >
           <Logo size={24} />
-          <button
-            onClick={() => setOpen(true)}
-            aria-label="Abrir menu"
-            className={`rounded-lg p-2 text-gm-700 hover:bg-gm-50 ${
-              transparent ? "border border-red-400/70 bg-white/70" : ""
-            }`}
-          >
-            ☰
-          </button>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <button
+              onClick={() => setOpen(true)}
+              aria-label="Abrir menu"
+              className={`rounded-lg p-2 text-gm-700 hover:bg-gm-50 ${
+                transparent ? "border border-red-400/70 bg-white/70" : ""
+              }`}
+            >
+              ☰
+            </button>
+          </div>
         </div>
       )}
 
@@ -116,8 +122,9 @@ export function Sidebar({ transparent }: { transparent?: boolean }) {
           }`}
         >
           <div className="flex h-full flex-col p-4">
-            <div className="px-2 py-3">
+            <div className="flex items-center justify-between px-2 py-3">
               <Logo />
+              <NotificationBell />
             </div>
             {navLinks}
           </div>

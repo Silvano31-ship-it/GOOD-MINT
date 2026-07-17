@@ -96,6 +96,29 @@ export async function sendDeadlineReminderEmail(
   );
 }
 
+/** Avisa o CORRETOR (não o cliente) por e-mail quando o cliente manda uma
+ * dúvida pelo portal — fallback pra quando ele não está com o app aberto
+ * (o push cobre o celular; o e-mail cobre quem ainda não ativou o push). */
+export async function sendNewQuestionEmail(
+  to: string,
+  brokerName: string,
+  leadName: string,
+  question: string,
+  dashboardUrl: string
+): Promise<void> {
+  await sendEmail(
+    to,
+    `Nova dúvida de ${leadName} no portal de acompanhamento`,
+    wrapEmail(
+      "Você recebeu uma nova dúvida 💬",
+      `<p>Olá, ${brokerName}!</p>
+       <p><b>${leadName}</b> escreveu isto no portal de acompanhamento:</p>
+       <p style="padding:12px;background:#f5f5f5;border-radius:6px;font-style:italic">"${question}"</p>
+       <p><a href="${dashboardUrl}" style="color:#0d7a4f">Responder no GOOD MINT</a></p>`
+    )
+  );
+}
+
 export async function sendCongratsEmail(
   to: string,
   clientName: string,

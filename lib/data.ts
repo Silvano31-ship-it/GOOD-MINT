@@ -6,6 +6,7 @@
 
 import { db } from "./db";
 import { sendPushToUser } from "./push";
+import { sendNewQuestionEmail } from "./resend";
 import {
   LEAD_STAGES,
   POST_SALE_STAGES,
@@ -377,11 +378,14 @@ export async function getPostSaleByToken(token: string): Promise<PublicPostSaleV
 export async function submitPortalQuestion(token: string, content: string): Promise<boolean> {
   const trimmed = content.trim();
   if (!trimmed) return false;
-  const { rows } = await db.query<{ id: string; user_id: string; lead_name: string }>(
-    `SELECT ps.id, ps.user_id, l.name AS lead_name
+  const { rows } = await db.query<{
+    id: string; user_id: string; lead_name: string; broker_email: string; broker_name: string;
+  }>(
+    `SELECT ps.id, ps.user_id, l.name AS lead_name, u.email AS broker_email, u.full_name AS broker_name
      FROM post_sale_processes ps
      JOIN negotiations n ON n.id = ps.negotiation_id
      JOIN leads l ON l.id = n.lead_id
+     JOIN users u ON u.id = ps.user_id
      WHERE ps.referral_token = $1`,
     [token]
   );
@@ -397,6 +401,17 @@ export async function submitPortalQuestion(token: string, content: string): Prom
     [ps.user_id, notifContent, ps.id]
   );
   await sendPushToUser(ps.user_id, { title: "Nova dúvida do cliente 💬", body: notifContent, url: `/pos-venda/${ps.id}` });
+  try {
+    await sendNewQuestionEmail(
+      ps.broker_email,
+      ps.broker_name,
+      ps.lead_name,
+      trimmed,
+      `${process.env.APP_URL}/pos-venda/${ps.id}`
+    );
+  } catch (err) {
+    console.error("Erro ao enviar e-mail de nova dúvida:", err);
+  }
   return true;
 }
 
@@ -521,11 +536,31 @@ export async function getTasks(userId: string): Promise<Task[]> {
 
 export async function getNotifications(userId: string): Promise<Notification[]> {
   const { rows } = await db.query<Notification>(
-    `SELECT id, type, content, read_at, created_at
+    `SELECT id, type, content, related_id, read_at, created_at
      FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 50`,
     [userId]
   );
   return rows;
+}
+
+/** Pro sino/toast do topo: contagem de não lidas + as mais recentes (só o
+ * essencial pra não pesar num polling frequente). */
+export async function getUnreadNotifications(
+  userId: string
+): Promise<{ count: number; latest: Notification[] }> {
+  const [{ rows: countRows }, { rows: latest }] = await Promise.all([
+    db.query<{ c: string }>(
+      `SELECT count(*)::int AS c FROM notifications WHERE user_id = $1 AND read_at IS NULL`,
+      [userId]
+    ),
+    db.query<Notification>(
+      `SELECT id, type, content, related_id, read_at, created_at
+       FROM notifications WHERE user_id = $1 AND read_at IS NULL
+       ORDER BY created_at DESC LIMIT 5`,
+      [userId]
+    ),
+  ]);
+  return { count: Number(countRows[0]?.c ?? 0), latest };
 }
 
 /** Lista de leads simples para selects (ex.: nova negociação). */

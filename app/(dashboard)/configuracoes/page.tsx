@@ -8,9 +8,10 @@ import { SubmitButton } from "@/components/SubmitButton";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LogoutButton } from "@/components/LogoutButton";
 
+// Plano e Cobrança e Notificações viraram itens diretos no menu lateral
+// (ver components/Sidebar.tsx) — aqui ficam só as configurações "de ajuste
+// fino", que não precisam de acesso tão rápido quanto as outras.
 const SECTIONS = [
-  { href: "/configuracoes/plano", icon: "💳", title: "Plano e Cobrança", desc: "Assinatura, faturas e cancelamento" },
-  { href: "/configuracoes/notificacoes", icon: "🔔", title: "Notificações", desc: "O que você recebe e onde" },
   { href: "/configuracoes/integracoes", icon: "🔌", title: "Integrações", desc: "WhatsApp, Instagram, Facebook, TikTok" },
   { href: "/configuracoes/bot", icon: "🤖", title: "Bot de IA", desc: "Tom de voz, horários, mensagens automáticas" },
   { href: "/configuracoes/fundo", icon: "🖼️", title: "Personalizar Fundo", desc: "Foto ou vídeo de fundo do Dashboard" },

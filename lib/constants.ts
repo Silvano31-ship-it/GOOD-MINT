@@ -195,8 +195,28 @@ export interface Notification {
   id: string;
   type: string;
   content: string;
+  related_id: string | null;
   read_at: string | null;
   created_at: string;
+}
+
+/** Pra onde levar o corretor ao tocar numa notificação — mesmo mapeamento
+ * usado nos títulos/links do push (ver lib/push.ts e os pontos que chamam
+ * sendPushToUser), só que centralizado aqui pro sino/lista reaproveitarem. */
+export function notificationUrl(type: string, relatedId: string | null): string {
+  switch (type) {
+    case "novo_lead":
+      return relatedId ? `/leads/${relatedId}` : "/leads";
+    case "tarefa_pendente":
+      return "/tarefas";
+    case "pos_venda_parado":
+    case "duvida_cliente":
+      return relatedId ? `/pos-venda/${relatedId}` : "/pos-venda";
+    case "trial_expirando":
+      return "/configuracoes/plano";
+    default:
+      return "/configuracoes/notificacoes";
+  }
 }
 
 export interface Note {
