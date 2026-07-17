@@ -117,7 +117,7 @@ export async function getProperty(userId: string, id: string): Promise<Property 
 
 export async function getNegotiations(userId: string): Promise<Negotiation[]> {
   const { rows } = await db.query<Negotiation>(
-    `SELECT n.id, l.name AS lead_name, p.address AS property_address,
+    `SELECT n.id, l.id AS lead_id, l.name AS lead_name, l.email AS lead_email, p.address AS property_address,
             n.negotiation_type, n.status, n.value_cents, n.closed_at, n.created_at
      FROM negotiations n
      JOIN leads l ON l.id = n.lead_id

@@ -127,7 +127,9 @@ export const PRICE_ALIGNMENT_OPTIONS = [
 
 export interface Negotiation {
   id: string;
+  lead_id: string;
   lead_name: string;
+  lead_email: string | null;
   property_address: string | null;
   negotiation_type: string;
   status: string;

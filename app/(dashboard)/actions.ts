@@ -456,8 +456,10 @@ export async function createNegotiation(formData: FormData) {
 /** Fecha a negociação e, opcionalmente, inicia o acompanhamento de pós-venda. */
 export async function closeNegotiation(negotiationId: string, startPostSale: boolean) {
   const userId = await requireUserId();
-  const { rows } = await db.query<{ lead_id: string }>(
-    `SELECT lead_id FROM negotiations WHERE id=$1 AND user_id=$2`,
+  const { rows } = await db.query<{ lead_id: string; lead_email: string | null }>(
+    `SELECT l.id AS lead_id, l.email AS lead_email
+     FROM negotiations n JOIN leads l ON l.id = n.lead_id
+     WHERE n.id=$1 AND n.user_id=$2`,
     [negotiationId, userId]
   );
   if (!rows[0]) return;
@@ -469,7 +471,10 @@ export async function closeNegotiation(negotiationId: string, startPostSale: boo
     rows[0].lead_id,
     userId,
   ]);
-  if (startPostSale) {
+  // Sem e-mail o Pós-Venda não consegue notificar o cliente nem liberar o
+  // Portal do Cliente — não inicia o acompanhamento nesse caso, mesmo que
+  // startPostSale venha true (defesa além da checagem já feita na UI).
+  if (startPostSale && rows[0].lead_email) {
     await db.query(
       `INSERT INTO post_sale_processes (user_id, negotiation_id, current_stage)
        VALUES ($1,$2,'assinatura_contrato')

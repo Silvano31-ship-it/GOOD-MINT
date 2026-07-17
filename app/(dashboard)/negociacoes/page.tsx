@@ -52,7 +52,7 @@ export default async function NegociacoesPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         {n.status === "aberta" ? (
-                          <CloseNegotiation negotiationId={n.id} />
+                          <CloseNegotiation negotiationId={n.id} leadId={n.lead_id} leadHasEmail={Boolean(n.lead_email)} />
                         ) : (
                           <span className="text-xs text-gm-700/40">Fechada em {formatDate(n.closed_at)}</span>
                         )}
