@@ -1,4 +1,6 @@
 // components/Sidebar.tsx — menu lateral do Dashboard (seção 4 da spec).
+// Visual "Night Gold": fundo azul-marinho/roxo com logo dourada brilhante,
+// hover com borda esquerda e brilho dourado, badge de notificação pulsante.
 "use client";
 
 import Link from "next/link";
@@ -50,24 +52,35 @@ export function Sidebar({ transparent }: { transparent?: boolean }) {
     href === "/dashboard" ? pathname === href : pathname.startsWith(href);
 
   const navLinks = (
-    <nav className="mt-2 flex-1 space-y-1.5">
-      {NAV.map((item) => (
-        <Link
-          key={item.href}
-          href={item.href}
-          onClick={() => setOpen(false)}
-          className={`flex items-center gap-3.5 rounded-full px-4 py-3 text-sm font-medium transition ${
-            isActive(item.href)
-              ? "bg-gm-500 text-white"
-              : transparent
-              ? "border border-red-400/70 bg-white/70 text-gm-900 backdrop-blur-sm hover:bg-white/90"
-              : "rounded-lg text-gm-700 hover:bg-gm-50"
-          }`}
-        >
-          <span className="pl-0.5">{item.icon}</span>
-          {item.label}
-        </Link>
-      ))}
+    <nav className="gm-scroll mt-2 flex-1 space-y-1 overflow-y-auto">
+      {NAV.map((item) => {
+        const active = isActive(item.href);
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            onClick={() => setOpen(false)}
+            className={`group flex items-center gap-3.5 rounded-lg border-l-4 px-3.5 py-2.5 text-sm font-medium transition-all duration-300 ${
+              active
+                ? "border-[#F5C94A] bg-[rgba(245,201,74,0.08)] text-[#F5C94A]"
+                : transparent
+                ? "border-transparent bg-white/70 text-gm-900 backdrop-blur-sm hover:border-[#F5C94A]/70 hover:bg-white/90"
+                : "border-transparent text-[#B0B8C8] hover:border-[#F5C94A] hover:bg-[rgba(245,201,74,0.06)] hover:text-[#F5C94A]"
+            }`}
+          >
+            <span
+              className={`pl-0.5 transition-all duration-300 ${
+                active
+                  ? "[filter:drop-shadow(0_0_6px_rgba(245,201,74,0.55))]"
+                  : "group-hover:[filter:drop-shadow(0_0_6px_rgba(245,201,74,0.45))]"
+              }`}
+            >
+              {item.icon}
+            </span>
+            {item.label}
+          </Link>
+        );
+      })}
     </nav>
   );
 
@@ -77,17 +90,19 @@ export function Sidebar({ transparent }: { transparent?: boolean }) {
       {!isDesktop && (
         <div
           className={`flex items-center justify-between border-b px-4 py-3 ${
-            transparent ? "border-white/10" : "border-gm-100 bg-gm-50"
+            transparent ? "border-white/10" : "gm-sidebar-dark border-[#1E2A3A]"
           }`}
         >
-          <Logo size={24} />
+          <Logo size={24} variant={transparent ? "dark" : "gold"} />
           <div className="flex items-center gap-1">
             <NotificationBell />
             <button
               onClick={() => setOpen(true)}
               aria-label="Abrir menu"
-              className={`rounded-lg p-2 text-gm-700 hover:bg-gm-50 ${
-                transparent ? "border border-red-400/70 bg-white/70" : ""
+              className={`rounded-lg p-2 transition-colors duration-300 ${
+                transparent
+                  ? "border border-[#F5C94A]/70 bg-white/70 text-gm-900"
+                  : "text-[#B0B8C8] hover:bg-[rgba(245,201,74,0.1)] hover:text-[#F5C94A]"
               }`}
             >
               ☰
@@ -101,14 +116,14 @@ export function Sidebar({ transparent }: { transparent?: boolean }) {
           "junto"/espremido ao lado do conteúdo da página, mesmo em
           navegadores in-app que às vezes ignoram a media query md:. */}
       {!isDesktop && open && (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-gm-50" role="dialog" aria-modal="true">
+        <div className="gm-sidebar-dark fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
           <div className="flex h-full flex-col p-4">
-            <div className="flex items-center justify-between pb-1">
-              <Logo size={24} />
+            <div className="flex items-center justify-between border-b border-[#1E2A3A] pb-3">
+              <Logo size={24} variant="gold" />
               <button
                 onClick={() => setOpen(false)}
                 aria-label="Fechar menu"
-                className="rounded-lg p-2 text-lg text-gm-700 hover:bg-gm-100"
+                className="rounded-lg p-2 text-lg text-[#B0B8C8] transition-colors duration-300 hover:bg-[rgba(245,201,74,0.1)] hover:text-[#F5C94A]"
               >
                 ✕
               </button>
@@ -121,12 +136,12 @@ export function Sidebar({ transparent }: { transparent?: boolean }) {
       {isDesktop && (
         <aside
           className={`sticky top-0 h-screen w-64 flex-none border-r ${
-            transparent ? "border-transparent" : "border-gm-100 bg-gm-50"
+            transparent ? "border-transparent" : "gm-sidebar-dark border-[#1E2A3A]"
           }`}
         >
           <div className="flex h-full flex-col p-4">
-            <div className="flex items-center justify-between px-2 py-3">
-              <Logo />
+            <div className="flex items-center justify-between border-b border-[#1E2A3A] px-2 pb-3">
+              <Logo variant={transparent ? "dark" : "gold"} />
               <NotificationBell />
             </div>
             {navLinks}

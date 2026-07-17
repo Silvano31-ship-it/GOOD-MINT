@@ -72,11 +72,11 @@ export function NotificationBell() {
       <Link
         href="/configuracoes/notificacoes"
         aria-label="Notificações"
-        className="relative flex h-9 w-9 flex-none items-center justify-center rounded-full text-lg hover:bg-gm-100"
+        className="relative flex h-9 w-9 flex-none items-center justify-center rounded-full text-lg transition-colors duration-300 hover:bg-[rgba(245,201,74,0.1)]"
       >
         🔔
         {count > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+          <span className="gm-badge-pulse absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#FF3B5C] px-1 text-[10px] font-bold text-white">
             {count > 9 ? "9+" : count}
           </span>
         )}
