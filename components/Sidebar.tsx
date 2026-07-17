@@ -26,6 +26,7 @@ const NAV = [
   { href: "/mensagens", label: "Central de Mensagens", icon: "💬" },
   { href: "/social", label: "Social", icon: "📣" },
   { href: "/ia-chat", label: "Assistente de IA", icon: "🤖" },
+  { href: "/automacoes", label: "Automações", icon: "⚡" },
   { href: "/configuracoes/plano", label: "Plano e Cobrança", icon: "💳" },
   { href: "/configuracoes/notificacoes", label: "Notificações", icon: "🔔" },
   { href: "/suporte", label: "Suporte", icon: "🆘" },

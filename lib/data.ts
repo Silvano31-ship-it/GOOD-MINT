@@ -27,6 +27,7 @@ import {
   type AiContent,
   type PostSaleStage,
   type Commission,
+  type Automation,
 } from "./constants";
 
 export { LEAD_STAGES, POST_SALE_STAGES, resolveStages };
@@ -41,7 +42,16 @@ export async function getPostSaleStageOverrides(userId: string): Promise<Record<
   );
   return rows[0]?.post_sale_stage_labels ?? {};
 }
-export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia, AiContent, Commission };
+export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia, AiContent, Commission, Automation };
+
+export async function getAutomations(userId: string): Promise<Automation[]> {
+  const { rows } = await db.query<Automation>(
+    `SELECT id, name, enabled, days_without_contact, action, action_message, created_at
+     FROM automations WHERE user_id = $1 ORDER BY created_at DESC`,
+    [userId]
+  );
+  return rows;
+}
 
 export interface Counts {
   leadsActive: number;

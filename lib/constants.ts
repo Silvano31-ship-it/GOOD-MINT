@@ -162,6 +162,23 @@ export interface Commission {
   created_at: string;
 }
 
+export type AutomationAction = "enviar_email" | "criar_tarefa";
+
+export const AUTOMATION_ACTION_LABELS: Record<AutomationAction, string> = {
+  enviar_email: "Enviar e-mail personalizado",
+  criar_tarefa: "Criar tarefa",
+};
+
+export interface Automation {
+  id: string;
+  name: string;
+  enabled: boolean;
+  days_without_contact: number;
+  action: AutomationAction;
+  action_message: string;
+  created_at: string;
+}
+
 export interface PostSale {
   id: string;
   lead_name: string;

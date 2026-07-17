@@ -1003,6 +1003,36 @@ export async function deleteCommission(id: string) {
   revalidatePath("/negociacoes");
 }
 
+// ---------------------------------------------------------------- AUTOMAÇÕES
+export async function createAutomation(formData: FormData) {
+  const userId = await requireUserId();
+  const name = String(formData.get("name") ?? "").trim();
+  const days = Number(formData.get("days_without_contact")) || 5;
+  const action = String(formData.get("action") ?? "enviar_email");
+  const message = String(formData.get("action_message") ?? "").trim();
+  if (!name || !message) return;
+  const allowedActions = new Set(["enviar_email", "criar_tarefa"]);
+
+  await db.query(
+    `INSERT INTO automations (user_id, name, days_without_contact, action, action_message)
+     VALUES ($1,$2,$3,$4,$5)`,
+    [userId, name, days, allowedActions.has(action) ? action : "enviar_email", message]
+  );
+  revalidatePath("/automacoes");
+}
+
+export async function toggleAutomation(id: string, enabled: boolean) {
+  const userId = await requireUserId();
+  await db.query(`UPDATE automations SET enabled=$1 WHERE id=$2 AND user_id=$3`, [enabled, id, userId]);
+  revalidatePath("/automacoes");
+}
+
+export async function deleteAutomation(id: string) {
+  const userId = await requireUserId();
+  await db.query(`DELETE FROM automations WHERE id=$1 AND user_id=$2`, [id, userId]);
+  revalidatePath("/automacoes");
+}
+
 // ---------------------------------------------------------------- NOTIFICAÇÕES
 export async function markNotificationRead(id: string) {
   const userId = await requireUserId();

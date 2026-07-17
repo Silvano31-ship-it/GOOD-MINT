@@ -119,6 +119,28 @@ export async function sendNewQuestionEmail(
   );
 }
 
+/** E-mail disparado por uma automação do corretor (ver Módulo Automações) —
+ * a mensagem em si é escrita pelo próprio corretor ao criar a regra. */
+export async function sendAutomationEmail(
+  to: string,
+  brokerName: string,
+  leadName: string,
+  customMessage: string,
+  leadUrl: string
+): Promise<void> {
+  await sendEmail(
+    to,
+    `⚡ Automação: ${leadName} precisa de atenção`,
+    wrapEmail(
+      "Uma automação foi disparada ⚡",
+      `<p>Olá, ${brokerName}!</p>
+       <p>Sua automação disparou para o lead <b>${leadName}</b>:</p>
+       <p style="padding:12px;background:#f5f5f5;border-radius:6px;font-style:italic">"${customMessage}"</p>
+       <p><a href="${leadUrl}" style="color:#0d7a4f">Ver lead</a></p>`
+    )
+  );
+}
+
 export async function sendCongratsEmail(
   to: string,
   clientName: string,
