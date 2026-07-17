@@ -13,6 +13,14 @@ import { SUPPORT_WHATSAPP, PLAN_PRICING } from "@/lib/constants";
 import { buildOAuthUrl, publishFacebookPost, publishInstagramPost } from "@/lib/meta";
 import { publishTiktokPost } from "@/lib/tiktok";
 import { sendPushToUser } from "@/lib/push";
+import { getGoogleCalendarConnection } from "@/lib/data";
+import {
+  buildOAuthUrl as buildGoogleOAuthUrl,
+  refreshAccessToken as refreshGoogleAccessToken,
+  createCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
+} from "@/lib/google-calendar";
 
 async function requireUserId(): Promise<string> {
   const session = await getSession();
@@ -471,9 +479,6 @@ export async function closeNegotiation(negotiationId: string, startPostSale: boo
     rows[0].lead_id,
     userId,
   ]);
-  // Sem e-mail o Pós-Venda não consegue notificar o cliente nem liberar o
-  // Portal do Cliente — não inicia o acompanhamento nesse caso, mesmo que
-  // startPostSale venha true (defesa além da checagem já feita na UI).
   if (startPostSale && rows[0].lead_email) {
     await db.query(
       `INSERT INTO post_sale_processes (user_id, negotiation_id, current_stage)
@@ -545,6 +550,132 @@ export async function createTask(formData: FormData) {
 export async function toggleTask(taskId: string, done: boolean) {
   const userId = await requireUserId();
   await db.query(`UPDATE tasks SET done=$1 WHERE id=$2 AND user_id=$3`, [done, taskId, userId]);
+  revalidatePath("/tarefas");
+  revalidatePath("/agenda");
+}
+
+export async function deleteTask(taskId: string) {
+  const userId = await requireUserId();
+  const { rows } = await db.query<{ google_event_id: string | null }>(
+    `SELECT google_event_id FROM tasks WHERE id=$1 AND user_id=$2`,
+    [taskId, userId]
+  );
+  await db.query(`DELETE FROM tasks WHERE id=$1 AND user_id=$2`, [taskId, userId]);
+  if (rows[0]?.google_event_id) {
+    const token = await getValidGoogleAccessToken(userId);
+    if (token) {
+      try {
+        await deleteCalendarEvent(token, rows[0].google_event_id);
+      } catch (err) {
+        console.error("Erro ao remover evento do Google Calendar:", err);
+      }
+    }
+  }
+  revalidatePath("/tarefas");
+  revalidatePath("/agenda");
+}
+
+// ---------------------------------------------------------------- AGENDA / GOOGLE CALENDAR
+// Reaproveita a tabela `tasks` (ver migration 021) — um evento da Agenda é só
+// uma tarefa com data+hora, tipo (pra cor) e duração. Sincronização com o
+// Google Calendar é best-effort: se falhar, o evento continua existindo
+// normalmente dentro do GOOD MINT, só não aparece espelhado no Google.
+
+/** Garante um access_token válido, renovando com o refresh_token se preciso.
+ * Retorna null se o corretor nunca conectou o Google Calendar. */
+async function getValidGoogleAccessToken(userId: string): Promise<string | null> {
+  const conn = await getGoogleCalendarConnection(userId);
+  if (!conn) return null;
+
+  const expiresInMs = new Date(conn.token_expires_at).getTime() - Date.now();
+  if (expiresInMs > 60_000) return conn.access_token;
+
+  try {
+    const refreshed = await refreshGoogleAccessToken(conn.refresh_token);
+    const expiresAt = new Date(Date.now() + refreshed.expires_in * 1000);
+    await db.query(
+      `UPDATE google_calendar_connections SET access_token=$1, token_expires_at=$2 WHERE user_id=$3`,
+      [refreshed.access_token, expiresAt.toISOString(), userId]
+    );
+    return refreshed.access_token;
+  } catch (err) {
+    console.error("Erro ao renovar token do Google Calendar:", err);
+    return null;
+  }
+}
+
+/** Início do fluxo OAuth — redireciona pro consentimento do Google. */
+export async function connectGoogleCalendar() {
+  const userId = await requireUserId();
+  const redirectUri = `${process.env.APP_URL}/api/oauth/google/callback`;
+  redirect(buildGoogleOAuthUrl(redirectUri, userId));
+}
+
+export async function disconnectGoogleCalendar() {
+  const userId = await requireUserId();
+  await db.query(`DELETE FROM google_calendar_connections WHERE user_id=$1`, [userId]);
+  revalidatePath("/agenda");
+}
+
+export async function createAgendaEvent(formData: FormData) {
+  const userId = await requireUserId();
+  const title = String(formData.get("title") ?? "").trim();
+  const date = String(formData.get("date") ?? "");
+  if (!title || !date) return;
+  const time = String(formData.get("time") ?? "09:00") || "09:00";
+  const eventType = String(formData.get("event_type") ?? "lembrete");
+  const allowedTypes = new Set(["visita", "reuniao", "ligacao", "lembrete", "prazo"]);
+  const duration = Number(formData.get("duration_minutes")) || 60;
+  const startISO = `${date}T${time}:00`;
+
+  const { rows } = await db.query<{ id: string }>(
+    `INSERT INTO tasks (user_id, title, due_at, related_type, event_type, duration_minutes)
+     VALUES ($1,$2,$3,'geral',$4,$5)
+     RETURNING id`,
+    [userId, title, startISO, allowedTypes.has(eventType) ? eventType : "lembrete", duration]
+  );
+
+  const token = await getValidGoogleAccessToken(userId);
+  if (token) {
+    try {
+      const event = await createCalendarEvent(token, { title, startISO, durationMinutes: duration });
+      await db.query(`UPDATE tasks SET google_event_id=$1 WHERE id=$2`, [event.id, rows[0].id]);
+    } catch (err) {
+      console.error("Erro ao criar evento no Google Calendar:", err);
+    }
+  }
+
+  revalidatePath("/agenda");
+  revalidatePath("/tarefas");
+}
+
+/** Reagendar um evento (o toque no evento e escolha de nova data/hora
+ * substitui o arrastar-e-soltar — mais confiável no celular). */
+export async function rescheduleAgendaEvent(taskId: string, date: string, time: string) {
+  const userId = await requireUserId();
+  const startISO = `${date}T${time}:00`;
+  const { rows } = await db.query<{ title: string; duration_minutes: number; google_event_id: string | null }>(
+    `UPDATE tasks SET due_at=$1 WHERE id=$2 AND user_id=$3
+     RETURNING title, duration_minutes, google_event_id`,
+    [startISO, taskId, userId]
+  );
+
+  if (rows[0]?.google_event_id) {
+    const token = await getValidGoogleAccessToken(userId);
+    if (token) {
+      try {
+        await updateCalendarEvent(token, rows[0].google_event_id, {
+          title: rows[0].title,
+          startISO,
+          durationMinutes: rows[0].duration_minutes,
+        });
+      } catch (err) {
+        console.error("Erro ao atualizar evento no Google Calendar:", err);
+      }
+    }
+  }
+
+  revalidatePath("/agenda");
   revalidatePath("/tarefas");
 }
 

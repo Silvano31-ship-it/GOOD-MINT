@@ -130,6 +130,21 @@ export async function getNegotiations(userId: string): Promise<Negotiation[]> {
   return rows;
 }
 
+// ---------------------------------------------------------------- AGENDA / GOOGLE CALENDAR
+export interface GoogleCalendarConnection {
+  access_token: string;
+  refresh_token: string;
+  token_expires_at: string;
+}
+
+export async function getGoogleCalendarConnection(userId: string): Promise<GoogleCalendarConnection | null> {
+  const { rows } = await db.query<GoogleCalendarConnection>(
+    `SELECT access_token, refresh_token, token_expires_at FROM google_calendar_connections WHERE user_id = $1`,
+    [userId]
+  );
+  return rows[0] ?? null;
+}
+
 // ---------------------------------------------------------------- FINANCEIRO
 export async function getCommissions(userId: string): Promise<Commission[]> {
   const { rows } = await db.query<Commission>(
