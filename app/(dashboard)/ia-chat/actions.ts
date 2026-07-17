@@ -27,7 +27,7 @@ export async function sendChatMessageAction(
     return { ok: true, reply };
   } catch (err) {
     console.error("Erro no chat de IA:", err);
-    return { ok: false, error: "Não foi possível responder agora. Tente novamente." };
+    return { ok: false, error: `DEBUG: ${err instanceof Error ? err.message : String(err)}` };
   }
 }
 
@@ -48,6 +48,6 @@ export async function generateChatImageAction(
     return { ok: true, url, prompt };
   } catch (err) {
     console.error("Erro ao gerar imagem no chat de IA:", err);
-    return { ok: false, error: "Não foi possível gerar a imagem agora. Tente novamente." };
+    return { ok: false, error: `DEBUG: ${err instanceof Error ? err.message : String(err)}` };
   }
 }
