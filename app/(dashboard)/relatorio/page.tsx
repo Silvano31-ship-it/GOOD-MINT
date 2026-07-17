@@ -13,16 +13,44 @@ import {
   getEstimatedMonthlyCommission,
   getRecentMeetings,
   getDailySuggestions,
+  getLeadsByMonth,
+  getLeadsByOrigin,
+  getCommissionByMonth,
+  getConversionRateForPeriod,
+  getAvgSaleDays,
 } from "@/lib/data";
 import { WEEKLY_LEAD_GOAL, LEAD_MESSAGE_TEMPLATES } from "@/lib/constants";
 import { formatBRL, formatDateTime } from "@/lib/format";
 import { CrystalSphere } from "@/components/CrystalSphere";
 import { StatCard, PageHeader } from "@/components/ui";
 import { FunnelChart } from "@/components/pos-venda/FunnelChart";
+import { PeriodFilter } from "@/components/relatorio/PeriodFilter";
+import { LeadsByMonthChart, LeadsByOriginChart, CommissionByMonthChart } from "@/components/relatorio/MetricsCharts";
 
-export default async function RelatorioPage() {
+export default async function RelatorioPage({
+  searchParams,
+}: {
+  searchParams: { dias?: string };
+}) {
   const user = await requireActiveAccount();
-  const [counts, funnelMetrics, weeklyLeads, staleLeads, todayTasks, estimatedCommission, recentMeetings, dailySuggestions] = await Promise.all([
+  const days = ["7", "30", "90", "365"].includes(searchParams.dias ?? "") ? Number(searchParams.dias) : 30;
+  const sinceDate = new Date(Date.now() - days * 86400000);
+
+  const [
+    counts,
+    funnelMetrics,
+    weeklyLeads,
+    staleLeads,
+    todayTasks,
+    estimatedCommission,
+    recentMeetings,
+    dailySuggestions,
+    leadsByMonth,
+    leadsByOrigin,
+    commissionByMonth,
+    conversionRatePeriod,
+    avgSaleDays,
+  ] = await Promise.all([
     getCounts(user.id),
     getLeadFunnelMetrics(user.id),
     getWeeklyLeadGoalProgress(user.id),
@@ -31,6 +59,11 @@ export default async function RelatorioPage() {
     getEstimatedMonthlyCommission(user.id),
     getRecentMeetings(user.id),
     getDailySuggestions(user.id),
+    getLeadsByMonth(user.id, sinceDate),
+    getLeadsByOrigin(user.id, sinceDate),
+    getCommissionByMonth(user.id, sinceDate),
+    getConversionRateForPeriod(user.id, sinceDate),
+    getAvgSaleDays(user.id, sinceDate),
   ]);
 
   const isEmpty =
@@ -38,6 +71,9 @@ export default async function RelatorioPage() {
     counts.properties === 0 &&
     counts.negotiationsOpen === 0 &&
     counts.postSaleActive === 0;
+
+  const totalLeadsPeriod = leadsByMonth.reduce((sum, m) => sum + m.count, 0);
+  const totalCommissionPeriod = commissionByMonth.reduce((sum, m) => sum + m.totalCents, 0);
 
   return (
     <div className="space-y-8">
@@ -197,6 +233,48 @@ export default async function RelatorioPage() {
             </ul>
           )}
           <Link href="/reunioes" className="mt-3 block text-xs font-medium text-gm-500 hover:underline">Ver todas as reuniões →</Link>
+        </div>
+      </section>
+
+      {/* Métricas e gráficos por período */}
+      <section>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-semibold text-gm-900">📈 Métricas e gráficos</h2>
+          <div className="flex items-center gap-2">
+            <PeriodFilter />
+            <a
+              href={`/api/relatorio/pdf?dias=${days}`}
+              className="rounded-lg border border-gm-200 px-3 py-1.5 text-xs font-semibold text-gm-700 hover:bg-gm-50"
+            >
+              📄 Exportar PDF
+            </a>
+          </div>
+        </div>
+
+        <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Novos leads" value={totalLeadsPeriod} icon="🎯" />
+          <StatCard label="Taxa de conversão" value={conversionRatePeriod} icon="📊" suffix="%" />
+          <StatCard label="Tempo médio de venda" value={avgSaleDays} icon="⏱️" suffix=" dias" />
+          <div className="gm-card p-4">
+            <div className="flex items-center gap-2 text-2xl">💰</div>
+            <div className="mt-1 text-2xl font-bold text-gm-900">{formatBRL(totalCommissionPeriod)}</div>
+            <div className="text-xs text-gm-700/60">Comissão no período</div>
+          </div>
+        </div>
+
+        <div className="grid gap-4 lg:grid-cols-2">
+          <div className="gm-card p-5">
+            <h3 className="mb-3 font-semibold text-gm-900">Leads por mês</h3>
+            <LeadsByMonthChart data={leadsByMonth} />
+          </div>
+          <div className="gm-card p-5">
+            <h3 className="mb-3 font-semibold text-gm-900">Origem dos leads</h3>
+            <LeadsByOriginChart data={leadsByOrigin} />
+          </div>
+          <div className="gm-card p-5 lg:col-span-2">
+            <h3 className="mb-3 font-semibold text-gm-900">Comissão por mês</h3>
+            <CommissionByMonthChart data={commissionByMonth} />
+          </div>
         </div>
       </section>
     </div>

@@ -26,11 +26,13 @@ export function StatCard({
   value,
   limit,
   icon,
+  suffix,
 }: {
   label: string;
   value: number;
   limit?: number | null;
   icon: string;
+  suffix?: string;
 }) {
   const pct = limit ? Math.min(100, Math.round((value / limit) * 100)) : 0;
   return (
@@ -40,7 +42,7 @@ export function StatCard({
         <span className="text-xl">{icon}</span>
       </div>
       <div className="mt-2 flex items-end gap-1">
-        <span className="text-3xl font-bold text-gm-900">{value}</span>
+        <span className="text-3xl font-bold text-gm-900">{value}{suffix ?? ""}</span>
         {limit != null && <span className="pb-1 text-sm text-gm-700/50">/ {limit}</span>}
       </div>
       {limit != null && (

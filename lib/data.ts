@@ -156,6 +156,77 @@ export async function getCommissions(userId: string): Promise<Commission[]> {
   return rows;
 }
 
+// -------------------------------------------------------- RELATÓRIOS / MÉTRICAS
+export interface MonthlyCount {
+  month: string; // "2026-07"
+  count: number;
+}
+
+export async function getLeadsByMonth(userId: string, sinceDate: Date): Promise<MonthlyCount[]> {
+  const { rows } = await db.query<MonthlyCount>(
+    `SELECT to_char(created_at, 'YYYY-MM') AS month, count(*)::int AS count
+     FROM leads WHERE user_id = $1 AND created_at >= $2
+     GROUP BY month ORDER BY month ASC`,
+    [userId, sinceDate.toISOString()]
+  );
+  return rows;
+}
+
+export interface OriginCount {
+  origin: string;
+  count: number;
+}
+
+export async function getLeadsByOrigin(userId: string, sinceDate: Date): Promise<OriginCount[]> {
+  const { rows } = await db.query<OriginCount>(
+    `SELECT COALESCE(NULLIF(TRIM(origin), ''), 'Não informado') AS origin, count(*)::int AS count
+     FROM leads WHERE user_id = $1 AND created_at >= $2
+     GROUP BY origin ORDER BY count DESC`,
+    [userId, sinceDate.toISOString()]
+  );
+  return rows;
+}
+
+/** Média de dias entre o cadastro do lead e o fechamento da negociação,
+ * entre as negociações fechadas dentro do período. */
+export async function getAvgSaleDays(userId: string, sinceDate: Date): Promise<number> {
+  const { rows } = await db.query<{ avg_days: string | null }>(
+    `SELECT avg(extract(epoch FROM (n.closed_at - l.created_at)) / 86400) AS avg_days
+     FROM negotiations n JOIN leads l ON l.id = n.lead_id
+     WHERE n.user_id = $1 AND n.status = 'fechada' AND n.closed_at >= $2`,
+    [userId, sinceDate.toISOString()]
+  );
+  return rows[0]?.avg_days ? Math.round(Number(rows[0].avg_days) * 10) / 10 : 0;
+}
+
+/** Taxa de conversão (fechados / total) só dos leads cadastrados dentro do
+ * período — diferente de getLeadFunnelMetrics, que é sempre histórico total. */
+export async function getConversionRateForPeriod(userId: string, sinceDate: Date): Promise<number> {
+  const { rows } = await db.query<{ total: string; closed: string }>(
+    `SELECT count(*)::int AS total, count(*) FILTER (WHERE funnel_stage = 'fechado')::int AS closed
+     FROM leads WHERE user_id = $1 AND created_at >= $2`,
+    [userId, sinceDate.toISOString()]
+  );
+  const total = Number(rows[0]?.total ?? 0);
+  const closed = Number(rows[0]?.closed ?? 0);
+  return total ? Math.round((closed / total) * 1000) / 10 : 0;
+}
+
+export interface MonthlyCommission {
+  month: string;
+  totalCents: number;
+}
+
+export async function getCommissionByMonth(userId: string, sinceDate: Date): Promise<MonthlyCommission[]> {
+  const { rows } = await db.query<{ month: string; total_cents: string }>(
+    `SELECT to_char(COALESCE(sale_date, created_at), 'YYYY-MM') AS month, sum(commission_cents)::bigint AS total_cents
+     FROM commissions WHERE user_id = $1 AND COALESCE(sale_date, created_at) >= $2
+     GROUP BY month ORDER BY month ASC`,
+    [userId, sinceDate.toISOString()]
+  );
+  return rows.map((r) => ({ month: r.month, totalCents: Number(r.total_cents) }));
+}
+
 const POST_SALE_LIST_SELECT = `
   ps.id, l.name AS lead_name, l.phone AS lead_phone, p.address AS property_address, n.value_cents,
   ps.current_stage, ps.stage_updated_at, ps.next_action, ps.next_action_due_at,
