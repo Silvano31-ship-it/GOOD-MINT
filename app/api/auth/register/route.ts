@@ -16,7 +16,7 @@ import { createSession } from "@/lib/session";
 import { DEFAULT_DASHBOARD_BACKGROUND } from "@/lib/constants";
 
 const TRIAL_DAYS = 3;
-const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro", "mint_business"]);
+const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro"]);
 const VALID_BILLING_CYCLES = new Set(["monthly", "yearly"]);
 
 export async function POST(req: Request) {

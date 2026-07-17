@@ -10,7 +10,6 @@ import { changePlanAndCycle } from "@/app/(dashboard)/actions";
 const PLAN_OPTIONS = [
   { code: "mint_start", name: "MINT Start" },
   { code: "mint_pro", name: "MINT Pro" },
-  { code: "mint_business", name: "MINT Business" },
 ];
 
 export function ChangePlanForm({

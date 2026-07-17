@@ -624,7 +624,7 @@ export async function cancelMySubscription() {
   revalidatePath("/configuracoes/plano");
 }
 
-const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro", "mint_business"]);
+const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro"]);
 const VALID_BILLING_CYCLES = new Set(["monthly", "yearly"]);
 
 /** Troca de plano e/ou ciclo de cobrança pra quem já tem cartão ativo (fluxo

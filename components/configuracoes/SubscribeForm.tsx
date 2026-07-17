@@ -13,7 +13,6 @@ import { formatBRL } from "@/lib/format";
 const PLAN_OPTIONS = [
   { code: "mint_start", name: "MINT Start", desc: "30 leads · 15 imóveis" },
   { code: "mint_pro", name: "MINT Pro", desc: "Leads e imóveis ilimitados" },
-  { code: "mint_business", name: "MINT Business", desc: "Tudo ilimitado" },
 ];
 
 export function SubscribeForm({

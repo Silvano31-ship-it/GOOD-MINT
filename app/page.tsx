@@ -79,11 +79,10 @@ const STRINGS = {
       mostPopular: "⭐ Mais popular",
       cta: "Começar teste grátis",
       footerNote: "Teste grátis de 3 dias. Cancele quando quiser.",
-      names: { mint_start: "MINT Start", mint_pro: "MINT Pro", mint_business: "MINT Business" },
+      names: { mint_start: "MINT Start", mint_pro: "MINT Pro" },
       features: {
         mint_start: ["30 leads ativos", "15 imóveis cadastrados", "Clientes em pós-venda ilimitados", "Central de Mensagens com bot de IA", "Planilhas e exportação"],
         mint_pro: ["Leads e imóveis ilimitados", "Tudo do MINT Start incluso", "Clientes em pós-venda ilimitados", "Central de Mensagens com bot de IA", "Planilhas e exportação"],
-        mint_business: ["Tudo ilimitado", "Tudo do MINT Pro incluso", "Prioridade nas próximas novidades", "Central de Mensagens com bot de IA", "Planilhas e exportação"],
       },
     },
     faq: {
@@ -158,11 +157,10 @@ const STRINGS = {
       mostPopular: "⭐ Most popular",
       cta: "Start free trial",
       footerNote: "3-day free trial. Cancel anytime.",
-      names: { mint_start: "MINT Start", mint_pro: "MINT Pro", mint_business: "MINT Business" },
+      names: { mint_start: "MINT Start", mint_pro: "MINT Pro" },
       features: {
         mint_start: ["30 active leads", "15 listed properties", "Unlimited after-sale clients", "AI-powered messaging hub", "Spreadsheets and export"],
         mint_pro: ["Unlimited leads and listings", "Everything in MINT Start", "Unlimited after-sale clients", "AI-powered messaging hub", "Spreadsheets and export"],
-        mint_business: ["Everything unlimited", "Everything in MINT Pro", "Priority on upcoming features", "AI-powered messaging hub", "Spreadsheets and export"],
       },
     },
     faq: {
@@ -176,11 +174,10 @@ const STRINGS = {
   },
 } as const;
 
-const PLAN_CODES = ["mint_start", "mint_pro", "mint_business"] as const;
+const PLAN_CODES = ["mint_start", "mint_pro"] as const;
 const PLAN_HIGHLIGHT: Record<(typeof PLAN_CODES)[number], boolean> = {
   mint_start: false,
   mint_pro: true,
-  mint_business: false,
 };
 
 function Feature({ title, desc, icon }: { title: string; desc: string; icon: string }) {
@@ -448,7 +445,7 @@ export default function LandingPage() {
             </span>
           </div>
 
-          <div className="mx-auto mt-10 grid max-w-5xl gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-10">
+          <div className="mx-auto mt-10 grid max-w-3xl gap-8 sm:grid-cols-2 lg:gap-10">
             {PLAN_CODES.map((code, i) => {
               const cents = isAnnual ? PLAN_PRICING[code].yearlyCents : PLAN_PRICING[code].monthlyCents;
               return (
