@@ -9,6 +9,7 @@ import { NotificationBell } from "./NotificationBell";
 
 const NAV = [
   { href: "/dashboard", label: "Visão Geral", icon: "📊" },
+  { href: "/relatorio", label: "Relatório | GOOD 🟢", icon: "📈" },
   { href: "/leads", label: "Leads", icon: "🎯" },
   { href: "/imoveis", label: "Imóveis", icon: "🏠" },
   { href: "/negociacoes", label: "Negociações", icon: "🤝" },
