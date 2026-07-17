@@ -26,6 +26,7 @@ import {
   type NoteMedia,
   type AiContent,
   type PostSaleStage,
+  type Commission,
 } from "./constants";
 
 export { LEAD_STAGES, POST_SALE_STAGES, resolveStages };
@@ -40,7 +41,7 @@ export async function getPostSaleStageOverrides(userId: string): Promise<Record<
   );
   return rows[0]?.post_sale_stage_labels ?? {};
 }
-export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia, AiContent };
+export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia, AiContent, Commission };
 
 export interface Counts {
   leadsActive: number;
@@ -118,11 +119,23 @@ export async function getProperty(userId: string, id: string): Promise<Property 
 export async function getNegotiations(userId: string): Promise<Negotiation[]> {
   const { rows } = await db.query<Negotiation>(
     `SELECT n.id, l.id AS lead_id, l.name AS lead_name, l.email AS lead_email, p.address AS property_address,
-            n.negotiation_type, n.status, n.value_cents, n.closed_at, n.created_at
+            n.negotiation_type, n.status, n.value_cents, n.closed_at, n.created_at, c.id AS commission_id
      FROM negotiations n
      JOIN leads l ON l.id = n.lead_id
      LEFT JOIN properties p ON p.id = n.property_id
+     LEFT JOIN commissions c ON c.negotiation_id = n.id
      WHERE n.user_id = $1 ORDER BY n.created_at DESC`,
+    [userId]
+  );
+  return rows;
+}
+
+// ---------------------------------------------------------------- FINANCEIRO
+export async function getCommissions(userId: string): Promise<Commission[]> {
+  const { rows } = await db.query<Commission>(
+    `SELECT id, negotiation_id, client_name, property_address, sale_value_cents,
+            commission_percent, commission_cents, status, sale_date, expected_payment_date, paid_at, created_at
+     FROM commissions WHERE user_id = $1 ORDER BY created_at DESC`,
     [userId]
   );
   return rows;

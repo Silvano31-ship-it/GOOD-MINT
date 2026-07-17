@@ -136,6 +136,30 @@ export interface Negotiation {
   value_cents: string | null;
   closed_at: string | null;
   created_at: string;
+  commission_id: string | null;
+}
+
+export type CommissionStatus = "pago" | "a_receber" | "pendente";
+
+export const COMMISSION_STATUS_LABELS: Record<CommissionStatus, string> = {
+  pago: "Pago",
+  a_receber: "A receber",
+  pendente: "Pendente",
+};
+
+export interface Commission {
+  id: string;
+  negotiation_id: string | null;
+  client_name: string;
+  property_address: string | null;
+  sale_value_cents: string;
+  commission_percent: string;
+  commission_cents: string;
+  status: CommissionStatus;
+  sale_date: string | null;
+  expected_payment_date: string | null;
+  paid_at: string | null;
+  created_at: string;
 }
 
 export interface PostSale {

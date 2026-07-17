@@ -825,6 +825,53 @@ export async function cancelScheduledPost(id: string) {
   revalidatePath("/social/publicacoes");
 }
 
+// ---------------------------------------------------------------- FINANCEIRO
+export async function createCommission(formData: FormData) {
+  const userId = await requireUserId();
+  const saleValueCents = parseEstimatedValueCents(formData.get("sale_value")) ?? 0;
+  const percent = Number(String(formData.get("commission_percent") ?? "").replace(",", ".")) || 6;
+  const negotiationId = String(formData.get("negotiation_id") ?? "") || null;
+
+  await db.query(
+    `INSERT INTO commissions
+       (user_id, negotiation_id, client_name, property_address, sale_value_cents, commission_percent, status, sale_date, expected_payment_date)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+     ON CONFLICT (negotiation_id) DO NOTHING`,
+    [
+      userId,
+      negotiationId,
+      String(formData.get("client_name") ?? "").trim(),
+      String(formData.get("property_address") ?? "") || null,
+      saleValueCents,
+      percent,
+      String(formData.get("status") ?? "a_receber"),
+      String(formData.get("sale_date") ?? "") || null,
+      String(formData.get("expected_payment_date") ?? "") || null,
+    ]
+  );
+  revalidatePath("/financeiro");
+  revalidatePath("/negociacoes");
+}
+
+export async function updateCommissionStatus(id: string, status: string) {
+  const userId = await requireUserId();
+  const allowed = new Set(["pago", "a_receber", "pendente"]);
+  if (!allowed.has(status)) return;
+  await db.query(
+    `UPDATE commissions SET status=$1, paid_at = CASE WHEN $1='pago' THEN now()::date ELSE paid_at END
+     WHERE id=$2 AND user_id=$3`,
+    [status, id, userId]
+  );
+  revalidatePath("/financeiro");
+}
+
+export async function deleteCommission(id: string) {
+  const userId = await requireUserId();
+  await db.query(`DELETE FROM commissions WHERE id=$1 AND user_id=$2`, [id, userId]);
+  revalidatePath("/financeiro");
+  revalidatePath("/negociacoes");
+}
+
 // ---------------------------------------------------------------- NOTIFICAÇÕES
 export async function markNotificationRead(id: string) {
   const userId = await requireUserId();

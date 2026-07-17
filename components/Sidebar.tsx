@@ -15,6 +15,7 @@ const NAV = [
   { href: "/leads", label: "Leads", icon: "🎯" },
   { href: "/imoveis", label: "Imóveis", icon: "🏠" },
   { href: "/negociacoes", label: "Negociações", icon: "🤝" },
+  { href: "/financeiro", label: "Financeiro", icon: "💰" },
   { href: "/pos-venda", label: "Pós-Venda", icon: "📦" },
   { href: "/pos-venda/etapas", label: "Etapas do Pós-Venda", icon: "🪜" },
   { href: "/planilhas", label: "Planilhas", icon: "📋" },

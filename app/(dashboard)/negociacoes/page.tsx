@@ -1,4 +1,5 @@
 // app/(dashboard)/negociacoes/page.tsx — Negociações (lista + criar + fechar).
+import Link from "next/link";
 import { requireActiveAccount } from "@/lib/account-guard";
 import { getNegotiations, getLeadOptions, getPropertyOptions } from "@/lib/data";
 import { PageHeader, EmptyState, Badge } from "@/components/ui";
@@ -55,6 +56,14 @@ export default async function NegociacoesPage() {
                           <CloseNegotiation negotiationId={n.id} leadId={n.lead_id} leadHasEmail={Boolean(n.lead_email)} />
                         ) : (
                           <span className="text-xs text-gm-700/40">Fechada em {formatDate(n.closed_at)}</span>
+                        )}
+                        {n.status === "fechada" && !n.commission_id && (
+                          <Link
+                            href={`/financeiro?negotiation_id=${n.id}&client=${encodeURIComponent(n.lead_name)}&value=${n.value_cents ?? ""}&address=${encodeURIComponent(n.property_address ?? "")}`}
+                            className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+                          >
+                            💰 Registrar comissão
+                          </Link>
                         )}
                         <DeleteNegotiation negotiationId={n.id} />
                       </div>
