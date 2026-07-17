@@ -172,11 +172,41 @@ body {
 }
 .gm-badge-pulse { animation: gm-badge-pulse 1.6s ease-in-out infinite; }
 
+/* Onda dourada a partir do ponto do clique nos itens do menu lateral (ver
+   components/SidebarMenuItem.tsx) — some sozinha, o próprio componente
+   remove o elemento do DOM depois de 600ms. */
+@keyframes gm-menu-ripple {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(4); opacity: 0; }
+}
+.gm-menu-ripple { animation: gm-menu-ripple 0.6s ease-out forwards; }
+
+/* Pulso do ícone ao clicar */
+@keyframes gm-menu-icon-pulse {
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px rgba(245,201,74,0.55)); }
+  50% { transform: scale(1.3); filter: drop-shadow(0 0 12px rgba(245,201,74,0.75)); }
+}
+.gm-menu-icon-pulse { animation: gm-menu-icon-pulse 0.4s ease-out; }
+
+/* Brilho de fundo "respirando" no item ativo do menu */
+@keyframes gm-menu-active-breath {
+  0%, 100% { opacity: 0.08; }
+  50% { opacity: 0.15; }
+}
+.gm-menu-active-breath {
+  background: rgba(245, 201, 74, 1);
+  opacity: 0.1;
+  animation: gm-menu-active-breath 2s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .gm-broker-emoji,
   .gm-emoji-float,
   .gm-sidebar-logo-shine,
-  .gm-badge-pulse {
+  .gm-badge-pulse,
+  .gm-menu-ripple,
+  .gm-menu-icon-pulse,
+  .gm-menu-active-breath {
     animation: none;
   }
   .gm-reveal {
