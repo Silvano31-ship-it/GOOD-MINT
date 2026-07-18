@@ -4,7 +4,7 @@
 // AvatarUpload.tsx (upload por fetch+FormData pra API route própria).
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { resetDashboardBackground } from "@/app/(dashboard)/actions";
 
@@ -24,6 +24,18 @@ export function BackgroundSelector({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    // Mesma correção de components/dashboard/DashboardBackground.tsx: o React só
+    // aplica `muted` como propriedade via JS depois que o elemento já existe no
+    // DOM, e o Safari decide se autoplay é permitido antes disso — sem forçar
+    // aqui, o preview fica parado no primeiro quadro com o ícone de play.
+    const v = videoRef.current;
+    if (!v || type !== "video") return;
+    v.muted = true;
+    v.play().catch(() => {});
+  }, [url, type]);
 
   async function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -76,7 +88,16 @@ export function BackgroundSelector({
       <div className="mb-3 flex h-32 w-full items-center justify-center overflow-hidden rounded-lg border border-gm-200 bg-gm-50">
         {url ? (
           type === "video" ? (
-            <video src={url} muted className="h-full w-full object-cover" />
+            <video
+              ref={videoRef}
+              key={url}
+              src={url}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className="h-full w-full object-cover"
+            />
           ) : (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={url} alt="" className="h-full w-full object-cover" />
