@@ -23,9 +23,12 @@ const NAV = [
   { href: "/grupos", label: "Grupos", icon: "👥" },
   { href: "/reunioes", label: "Reuniões", icon: "🎥" },
   { href: "/tarefas", label: "Tarefas", icon: "✅" },
+  { href: "/agenda", label: "Agenda", icon: "🗓️" },
   { href: "/mensagens", label: "Central de Mensagens", icon: "💬" },
   { href: "/social", label: "Social", icon: "📣" },
+  { href: "/portal-cliente", label: "Portal do Cliente", icon: "🔗" },
   { href: "/ia-chat", label: "Assistente de IA", icon: "🤖" },
+  { href: "/metas", label: "Metas", icon: "🏆" },
   { href: "/automacoes", label: "Automações", icon: "⚡" },
   { href: "/configuracoes/plano", label: "Plano e Cobrança", icon: "💳" },
   { href: "/configuracoes/notificacoes", label: "Notificações", icon: "🔔" },
@@ -36,11 +39,6 @@ const NAV = [
 export function Sidebar({ transparent }: { transparent?: boolean }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  // Detecta o tamanho real da tela por JavaScript (não só por media query
-  // CSS): alguns navegadores "in-app" (WhatsApp, Telegram etc.) às vezes não
-  // aplicam a media query direito e mostram o menu de computador dentro de
-  // um celular. Começa assumindo celular (o público deste app é majoritário
-  // mobile) e só vira "computador" depois que o JS confirma a largura real.
   const [isDesktop, setIsDesktop] = useState(false);
 
   useEffect(() => {
@@ -71,7 +69,6 @@ export function Sidebar({ transparent }: { transparent?: boolean }) {
 
   return (
     <>
-      {/* Topbar mobile */}
       {!isDesktop && (
         <div
           className={`flex items-center justify-between border-b px-4 py-3 ${
@@ -96,10 +93,6 @@ export function Sidebar({ transparent }: { transparent?: boolean }) {
         </div>
       )}
 
-      {/* Menu mobile: sobreposição de tela cheia (fixed), independente do
-          layout em coluna do resto da página — assim ele nunca aparece
-          "junto"/espremido ao lado do conteúdo da página, mesmo em
-          navegadores in-app que às vezes ignoram a media query md:. */}
       {!isDesktop && open && (
         <div className="gm-sidebar-dark fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
           <div className="flex h-full flex-col p-4">
