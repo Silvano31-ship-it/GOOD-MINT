@@ -479,6 +479,9 @@ export async function closeNegotiation(negotiationId: string, startPostSale: boo
     rows[0].lead_id,
     userId,
   ]);
+  // Sem e-mail o Pós-Venda não consegue notificar o cliente nem liberar o
+  // Portal do Cliente — não inicia o acompanhamento nesse caso, mesmo que
+  // startPostSale venha true (defesa além da checagem já feita na UI).
   if (startPostSale && rows[0].lead_email) {
     await db.query(
       `INSERT INTO post_sale_processes (user_id, negotiation_id, current_stage)
@@ -1031,6 +1034,32 @@ export async function deleteAutomation(id: string) {
   const userId = await requireUserId();
   await db.query(`DELETE FROM automations WHERE id=$1 AND user_id=$2`, [id, userId]);
   revalidatePath("/automacoes");
+}
+
+// ---------------------------------------------------------------- METAS
+export async function createGoal(formData: FormData) {
+  const userId = await requireUserId();
+  const goalType = String(formData.get("goal_type") ?? "valor");
+  const periodStart = String(formData.get("period_start") ?? "");
+  const periodEnd = String(formData.get("period_end") ?? "");
+  if (!periodStart || !periodEnd) return;
+
+  const rawTarget = Number(formData.get("target_value")) || 0;
+  if (rawTarget <= 0) return;
+  const targetValue = goalType === "valor" ? Math.round(rawTarget * 100) : Math.round(rawTarget);
+
+  await db.query(
+    `INSERT INTO goals (user_id, goal_type, target_value, period_start, period_end)
+     VALUES ($1,$2,$3,$4,$5)`,
+    [userId, goalType === "quantidade" ? "quantidade" : "valor", targetValue, periodStart, periodEnd]
+  );
+  revalidatePath("/metas");
+}
+
+export async function deleteGoal(id: string) {
+  const userId = await requireUserId();
+  await db.query(`DELETE FROM goals WHERE id=$1 AND user_id=$2`, [id, userId]);
+  revalidatePath("/metas");
 }
 
 // ---------------------------------------------------------------- NOTIFICAÇÕES
