@@ -28,6 +28,7 @@ import {
   type PostSaleStage,
   type Commission,
   type Automation,
+  type Goal,
 } from "./constants";
 
 export { LEAD_STAGES, POST_SALE_STAGES, resolveStages };
@@ -42,12 +43,39 @@ export async function getPostSaleStageOverrides(userId: string): Promise<Record<
   );
   return rows[0]?.post_sale_stage_labels ?? {};
 }
-export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia, AiContent, Commission, Automation };
+export type { Lead, Property, Negotiation, PostSale, ChecklistItem, Communication, Referral, Task, Notification, Note, NoteMedia, AiContent, Commission, Automation, Goal };
 
 export async function getAutomations(userId: string): Promise<Automation[]> {
   const { rows } = await db.query<Automation>(
     `SELECT id, name, enabled, days_without_contact, action, action_message, created_at
      FROM automations WHERE user_id = $1 ORDER BY created_at DESC`,
+    [userId]
+  );
+  return rows;
+}
+
+/** Metas de vendas — progresso sempre calculado ao vivo contra as negociações
+ * fechadas (status='fechada') dentro do período da meta, nunca guardado. */
+export async function getGoals(userId: string): Promise<Goal[]> {
+  const { rows } = await db.query<Goal>(
+    `SELECT g.id, g.goal_type, g.target_value, g.period_start, g.period_end, g.created_at,
+            COALESCE(
+              CASE
+                WHEN g.goal_type = 'valor' THEN (
+                  SELECT SUM(n.value_cents) FROM negotiations n
+                  WHERE n.user_id = g.user_id AND n.status = 'fechada'
+                    AND n.closed_at::date BETWEEN g.period_start AND g.period_end
+                )
+                ELSE (
+                  SELECT COUNT(*) FROM negotiations n
+                  WHERE n.user_id = g.user_id AND n.status = 'fechada'
+                    AND n.closed_at::date BETWEEN g.period_start AND g.period_end
+                )
+              END,
+            0) AS achieved_value
+     FROM goals g
+     WHERE g.user_id = $1
+     ORDER BY g.period_end DESC`,
     [userId]
   );
   return rows;
@@ -240,7 +268,8 @@ export async function getCommissionByMonth(userId: string, sinceDate: Date): Pro
 const POST_SALE_LIST_SELECT = `
   ps.id, l.name AS lead_name, l.phone AS lead_phone, p.address AS property_address, n.value_cents,
   ps.current_stage, ps.stage_updated_at, ps.next_action, ps.next_action_due_at,
-  ps.is_financed, ps.kanban_status, ps.referral_token
+  ps.is_financed, ps.kanban_status, ps.referral_token,
+  ps.portal_access_count, ps.portal_last_access_at
 `;
 
 export async function getPostSales(userId: string): Promise<PostSale[]> {
@@ -481,6 +510,16 @@ export async function getPostSaleByToken(token: string): Promise<PublicPostSaleV
   };
 }
 
+/** Registra um acesso ao portal do cliente (contador + último acesso),
+ * escopado só pelo token — alimenta a página "Portal do Cliente" do corretor. */
+export async function registerPortalAccess(token: string): Promise<void> {
+  await db.query(
+    `UPDATE post_sale_processes SET portal_access_count = portal_access_count + 1, portal_last_access_at = now()
+     WHERE referral_token = $1`,
+    [token]
+  );
+}
+
 /** Cliente envia uma dúvida pelo portal público — escopado só pelo token.
  * Avisa o corretor na hora (notificação in-app + push), pra não ficar
  * "escondida" só na timeline do processo. */
@@ -636,7 +675,7 @@ export async function getUrgentPostSaleTasks(userId: string) {
 
 export async function getTasks(userId: string): Promise<Task[]> {
   const { rows } = await db.query<Task>(
-    `SELECT id, title, due_at, done, related_type, created_at
+    `SELECT id, title, due_at, done, related_type, event_type, duration_minutes, created_at
      FROM tasks WHERE user_id = $1 ORDER BY done ASC, due_at ASC NULLS LAST, created_at DESC`,
     [userId]
   );
