@@ -179,6 +179,21 @@ export interface Automation {
   created_at: string;
 }
 
+export type GoalType = "valor" | "quantidade";
+export const GOAL_TYPE_LABELS: Record<GoalType, string> = {
+  valor: "Valor em vendas",
+  quantidade: "Número de vendas",
+};
+export interface Goal {
+  id: string;
+  goal_type: GoalType;
+  target_value: string;
+  period_start: string;
+  period_end: string;
+  created_at: string;
+  achieved_value: string;
+}
+
 export interface PostSale {
   id: string;
   lead_name: string;
@@ -192,6 +207,8 @@ export interface PostSale {
   is_financed: boolean;
   kanban_status: string;
   referral_token: string;
+  portal_access_count: number;
+  portal_last_access_at: string | null;
 }
 
 export interface ChecklistItem {
@@ -225,12 +242,34 @@ export interface Referral {
   created_at: string;
 }
 
+export type EventType = "visita" | "reuniao" | "ligacao" | "lembrete" | "prazo";
+
+export const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  visita: "Visita",
+  reuniao: "Reunião",
+  ligacao: "Ligação",
+  lembrete: "Lembrete",
+  prazo: "Prazo",
+};
+
+/** Cores por tipo de evento na Agenda — classes Tailwind prontas (bolinha do
+ * calendário + chip da lista), sem depender de CSS-in-JS. */
+export const EVENT_TYPE_COLORS: Record<EventType, { dot: string; chip: string }> = {
+  visita: { dot: "bg-blue-500", chip: "bg-blue-50 text-blue-700 border-blue-200" },
+  reuniao: { dot: "bg-green-500", chip: "bg-green-50 text-green-700 border-green-200" },
+  ligacao: { dot: "bg-purple-500", chip: "bg-purple-50 text-purple-700 border-purple-200" },
+  lembrete: { dot: "bg-gm-400", chip: "bg-gm-50 text-gm-700 border-gm-200" },
+  prazo: { dot: "bg-red-500", chip: "bg-red-50 text-red-700 border-red-200" },
+};
+
 export interface Task {
   id: string;
   title: string;
   due_at: string | null;
   done: boolean;
   related_type: string;
+  event_type: EventType;
+  duration_minutes: number;
   created_at: string;
 }
 
@@ -249,6 +288,7 @@ export interface Notification {
 export function notificationUrl(type: string, relatedId: string | null): string {
   switch (type) {
     case "novo_lead":
+    case "lead_parado":
       return relatedId ? `/leads/${relatedId}` : "/leads";
     case "tarefa_pendente":
       return "/tarefas";
