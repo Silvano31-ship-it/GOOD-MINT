@@ -3,7 +3,7 @@
 // Sem url, não renderiza nada (fundo padrão do dashboard, sem mudança nenhuma).
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function DashboardBackground({
   url,
@@ -13,6 +13,20 @@ export function DashboardBackground({
   type: "image" | "video" | null;
 }) {
   const [failed, setFailed] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    // O React só aplica a prop `muted` como propriedade via JS depois que o
+    // elemento já existe no DOM, não como atributo HTML na primeira renderização.
+    // O Safari decide se autoplay é permitido nesse primeiro instante — sem o
+    // atributo, ele bloqueia o autoplay e o vídeo fica parado no primeiro
+    // quadro com o ícone de play. Forçar `muted` e chamar `.play()` aqui
+    // corrige isso.
+    const v = videoRef.current;
+    if (!v || type !== "video") return;
+    v.muted = true;
+    v.play().catch(() => {});
+  }, [url, type]);
 
   if (!url || failed) return null;
 
@@ -20,6 +34,7 @@ export function DashboardBackground({
     <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
       {type === "video" ? (
         <video
+          ref={videoRef}
           key={url}
           autoPlay
           loop
