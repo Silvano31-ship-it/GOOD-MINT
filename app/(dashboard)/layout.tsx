@@ -4,6 +4,7 @@ import Link from "next/link";
 import { requireActiveAccount, trialDaysLeft } from "@/lib/account-guard";
 import { Sidebar } from "@/components/Sidebar";
 import { DashboardBackground } from "@/components/dashboard/DashboardBackground";
+import { PlanGate } from "@/components/PlanGate";
 
 export default async function DashboardLayout({
   children,
@@ -20,6 +21,7 @@ export default async function DashboardLayout({
     >
       <DashboardBackground url={user.background_url} type={user.background_type} />
       <Sidebar transparent={!!user.background_url} />
+      <PlanGate />
       <main className="flex-1">
         {user.ai_unlimited ? (
           <div className="mx-4 mt-4 flex flex-wrap items-center justify-center gap-2 rounded-xl border border-red-400/70 bg-white/90 px-4 py-2.5 text-center text-sm text-gm-900 shadow-sm backdrop-blur-sm md:mx-8">
