@@ -8,7 +8,6 @@ import { cancelMySubscription } from "@/app/(dashboard)/actions";
 import { PageHeader, Badge } from "@/components/ui";
 import { formatBRL, formatDate } from "@/lib/format";
 import { SubscribeForm } from "@/components/configuracoes/SubscribeForm";
-import { ChangePlanForm } from "@/components/configuracoes/ChangePlanForm";
 import { PLAN_PRICING, type BillingCycle } from "@/lib/constants";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -96,7 +95,6 @@ export default async function PlanoPage() {
 
           {subscription && subscription.status !== "canceled" && hasCard && (
             <>
-              <ChangePlanForm currentPlanCode={subscription.plan_code} currentBillingCycle={subscription.billing_cycle} />
               <form action={cancelMySubscription} className="mt-6">
                 <button className="rounded-lg border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">
                   Cancelar assinatura
@@ -114,12 +112,12 @@ export default async function PlanoPage() {
 
           {subscription && !hasCard && subscription.status !== "canceled" && (
             <div className="mt-6 border-t border-gm-100 pt-6">
-              <h2 className="mb-1 font-semibold text-gm-900">Assinar um plano</h2>
+              <h2 className="mb-1 font-semibold text-gm-900">Assinar o Plano Único</h2>
               <p className="mb-4 text-sm text-gm-700/60">
-                Você ainda não tem um cartão cadastrado. Escolha um plano e assine
-                quando quiser — sem cobrança durante o teste grátis.
+                Você ainda não tem um cartão cadastrado. Assine quando quiser —
+                sem cobrança durante o teste grátis, e tudo fica ilimitado na hora.
               </p>
-              <SubscribeForm currentPlanCode={subscription.plan_code} currentBillingCycle={subscription.billing_cycle} />
+              <SubscribeForm />
             </div>
           )}
         </div>
