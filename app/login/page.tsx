@@ -1,8 +1,9 @@
-// app/login/page.tsx — Tela 2. Login.
-// Página própria (não usa AuthShell) para poder ter um fundo em degradê cheio
-// atrás do card com efeito de vidro — o AuthShell é de 2 colunas com painel
-// branco à direita, o que não dá esse efeito. cadastro/recuperar-senha
-// continuam usando AuthShell normalmente, sem mudanças.
+// app/login/page.tsx — Tela 2. Login — versão "Night Gold" cinematográfica.
+// Fundo azul-marinho→roxo com campo de estrelas (douradas e brancas), esfera
+// de cristal com brilho dourado, card glassmorphism e botão com gradiente
+// azul→dourado. Tudo CSS puro (classes gm-night* em app/globals.css) — sem
+// Three.js/tsparticles/framer-motion, pra manter o login leve no celular.
+// cadastro/recuperar-senha continuam com o AuthShell normal.
 "use client";
 
 import { Suspense, useState } from "react";
@@ -47,14 +48,14 @@ function LoginForm() {
   }
 
   return (
-    <div className="gm-glass w-full max-w-sm rounded-2xl p-8">
-      <h1 className="text-xl font-bold text-white">Acesse sua conta</h1>
-      <p className="mt-1 text-sm text-white/60">Entre com seu e-mail e senha.</p>
+    <div className="gm-night-glass w-full max-w-sm rounded-2xl p-8">
+      <h2 className="text-2xl font-semibold text-white">Acesse sua conta</h2>
+      <p className="mt-1 text-sm text-[#B0B8C8]">Entre com seu e-mail e senha.</p>
 
       <form onSubmit={onSubmit} className="mt-6 space-y-4">
         <div>
           <label className="mb-1 block text-sm font-medium text-white/80">E-mail</label>
-          <div className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 focus-within:border-gm-300">
+          <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#1A2035] px-3 transition-colors duration-300 focus-within:border-[#F5C94A]">
             <span aria-hidden="true">📧</span>
             <input
               type="email"
@@ -70,7 +71,7 @@ function LoginForm() {
 
         <div>
           <label className="mb-1 block text-sm font-medium text-white/80">Senha</label>
-          <div className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/5 px-3 focus-within:border-gm-300">
+          <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-[#1A2035] px-3 transition-colors duration-300 focus-within:border-[#F5C94A]">
             <span aria-hidden="true">🔒</span>
             <input
               type={showPassword ? "text" : "password"}
@@ -93,16 +94,16 @@ function LoginForm() {
         </div>
 
         <div className="flex items-center justify-between text-sm">
-          <label className="flex items-center gap-2 text-white/70">
+          <label className="flex items-center gap-2 text-[#B0B8C8]">
             <input
               type="checkbox"
               checked={remember}
               onChange={(e) => setRemember(e.target.checked)}
-              className="accent-gm-400"
+              className="accent-[#F5C94A]"
             />
             Lembrar-me
           </label>
-          <Link href="/recuperar-senha" className="text-white/70 hover:text-white">
+          <Link href="/recuperar-senha" className="text-[#B0B8C8] transition-colors duration-300 hover:text-[#F5C94A]">
             Esqueci minha senha
           </Link>
         </div>
@@ -114,15 +115,15 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-gradient-to-r from-gm-400 to-gm-600 py-2.5 font-semibold text-white shadow-lg transition hover:opacity-90 disabled:opacity-60"
+          className="gm-night-btn w-full rounded-lg py-3 font-semibold text-white shadow-lg disabled:opacity-60"
         >
           {loading ? "Entrando..." : "Entrar"}
         </button>
       </form>
 
-      <p className="mt-5 text-center text-sm text-white/60">
+      <p className="mt-5 text-center text-sm text-[#B0B8C8]">
         Ainda não tem conta?{" "}
-        <Link href="/cadastro" className="font-semibold text-white hover:underline">
+        <Link href="/cadastro" className="font-semibold text-[#F5C94A] hover:underline">
           Comece o teste grátis
         </Link>
       </p>
@@ -139,24 +140,25 @@ const BADGES = [
 export default function LoginPage() {
   return (
     <>
-      <main className="gm-radial gm-radial-animated relative min-h-screen overflow-hidden">
+      <main className="gm-night relative min-h-screen overflow-hidden">
+        <div className="gm-stars" aria-hidden="true" />
         <FloatingEmojis />
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-5 pb-8 pt-16 md:grid-cols-2">
           <Reveal className="order-2 flex flex-col items-center text-center md:order-1 md:items-start md:text-left">
-            <h1 className="text-3xl font-bold leading-tight text-white sm:text-4xl">
+            <h1 className="gm-night-title text-3xl font-bold leading-tight text-white sm:text-4xl lg:text-5xl">
               Pré-venda e pós-venda,{" "}
-              <span className="text-gm-300">numa só visão.</span>
+              <span className="text-[#F5C94A]">numa só visão.</span>
             </h1>
-            <p className="mt-3 max-w-md text-white/70">
-              O futuro da gestão do seu negócio começa aqui.
+            <p className="mt-3 max-w-md text-[#B0B8C8]">
+              A tecnologia que conecta você ao futuro do mercado imobiliário.
             </p>
             <div className="mt-6 scale-75 md:scale-100">
-              <CrystalSphere empty={false} caption="Veja seu negócio em uma única visão." />
+              <CrystalSphere empty={false} accent="gold" caption="Veja seu negócio em uma única visão." />
             </div>
           </Reveal>
 
           <div className="order-1 flex justify-center md:order-2 md:justify-end">
-            <Suspense fallback={<p className="text-sm text-white/60">Carregando...</p>}>
+            <Suspense fallback={<p className="text-sm text-[#B0B8C8]">Carregando...</p>}>
               <LoginForm />
             </Suspense>
           </div>
@@ -166,7 +168,7 @@ export default function LoginPage() {
           {BADGES.map((b) => (
             <span
               key={b}
-              className="rounded-full bg-white/10 px-4 py-1.5 text-sm font-medium text-white/90 ring-1 ring-white/20"
+              className="rounded-full border border-[#F5C94A]/20 bg-[#F5C94A]/[0.12] px-4 py-1.5 text-sm font-medium text-[#F5C94A]"
             >
               {b}
             </span>
