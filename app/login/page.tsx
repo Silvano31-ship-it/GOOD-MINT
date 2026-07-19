@@ -3,7 +3,6 @@
 // de cristal com brilho dourado, card glassmorphism e botão com gradiente
 // azul→dourado. Tudo CSS puro (classes gm-night* em app/globals.css) — sem
 // Three.js/tsparticles/framer-motion, pra manter o login leve no celular.
-// cadastro/recuperar-senha continuam com o AuthShell normal.
 "use client";
 
 import { Suspense, useState } from "react";
@@ -12,7 +11,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { CrystalSphere } from "@/components/CrystalSphere";
 import { FloatingEmojis } from "@/components/FloatingEmojis";
 import { Reveal } from "@/components/Reveal";
-import { Footer } from "@/components/Footer";
+import { LoginFooter } from "@/components/login/LoginFooter";
 
 function LoginForm() {
   const router = useRouter();
@@ -174,8 +173,9 @@ export default function LoginPage() {
             </span>
           ))}
         </div>
+
+        <LoginFooter />
       </main>
-      <Footer />
     </>
   );
 }
