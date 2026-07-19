@@ -16,8 +16,6 @@ import { createSession } from "@/lib/session";
 import { DEFAULT_DASHBOARD_BACKGROUND } from "@/lib/constants";
 
 const TRIAL_DAYS = 3;
-const VALID_PLAN_CODES = new Set(["mint_start", "mint_pro"]);
-const VALID_BILLING_CYCLES = new Set(["monthly", "yearly"]);
 
 export async function POST(req: Request) {
   let input: RegisterInput & { planCode?: string; billingCycle?: string };
@@ -32,8 +30,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ errors }, { status: 422 });
   }
 
-  const planCode = VALID_PLAN_CODES.has(input.planCode ?? "") ? input.planCode! : "mint_start";
-  const billingCycle = VALID_BILLING_CYCLES.has(input.billingCycle ?? "") ? input.billingCycle! : "monthly";
+  // Plano Único: todo cadastro novo entra no mesmo plano (mint_pro renomeado
+  // pela migration 027), cobrança mensal. Durante o trial de 3 dias só as
+  // funções essenciais ficam liberadas — ver components/PlanGate.tsx.
+  const planCode = "mint_pro";
+  const billingCycle = "monthly";
 
   const existing = await findUserByEmail(input.email);
   if (existing) {
