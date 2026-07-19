@@ -10,8 +10,9 @@ import { CrystalSphere } from "@/components/CrystalSphere";
 import { FloatingEmojis } from "@/components/FloatingEmojis";
 import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
-import { PLAN_PRICING, type BillingCycle } from "@/lib/constants";
 import { formatBRL } from "@/lib/format";
+
+const PLANO_UNICO_CENTS = 4990;
 
 type Lang = "pt" | "en";
 
@@ -70,25 +71,27 @@ const STRINGS = {
       badges: ["✅ Cliente informado", "🕒 Zero esforço", "🚀 Foco em vendas"],
     },
     plans: {
-      title: "Planos e preços",
-      subtitle: "Comece grátis por 3 dias, sem cartão. Escolha o plano quando quiser.",
+      title: "Um plano só. Tudo ilimitado.",
+      subtitle: "Teste grátis de 3 dias com as funções essenciais, sem cartão. Assine e destrave tudo.",
       perMonth: "/mês",
-      perYear: "/ano",
-      monthlyLabel: "Mensal",
-      annualLabel: "Anual (economize 20%)",
-      mostPopular: "⭐ Mais popular",
+      badge: "👑 Plano Único",
       cta: "Começar teste grátis",
-      footerNote: "Teste grátis de 3 dias. Cancele quando quiser.",
-      names: { mint_start: "MINT Start", mint_pro: "MINT Pro" },
-      features: {
-        mint_start: ["30 leads ativos", "15 imóveis cadastrados", "Clientes em pós-venda ilimitados", "Central de Mensagens com bot de IA", "Planilhas e exportação"],
-        mint_pro: ["Leads e imóveis ilimitados", "Tudo do MINT Start incluso", "Clientes em pós-venda ilimitados", "Central de Mensagens com bot de IA", "Planilhas e exportação"],
-      },
+      footerNote: "Teste grátis de 3 dias. Sem fidelidade — cancele quando quiser.",
+      refundNote: "🛡️ Garantia de reembolso de 7 dias: assinou e não gostou? Devolvemos 100% em até 7 dias após a compra. Após 7 dias, não há reembolso.",
+      features: [
+        "Leads e imóveis ilimitados",
+        "IA ilimitada: assistente, conteúdo e imagens",
+        "Automações e Agenda com Google Calendar",
+        "Pós-venda completo + Portal do Cliente",
+        "Disparo WhatsApp, Metas, Financeiro e Planilhas",
+        "Notas, Grupos, Reuniões e Central de Mensagens",
+      ],
     },
     faq: {
       title: "Perguntas frequentes",
       items: [
-        ["Como funciona o teste grátis?", "Você usa o GOOD MINT por 3 dias sem nenhuma cobrança e sem precisar cadastrar cartão. Se quiser continuar depois do teste, escolhe um plano e cadastra o pagamento quando quiser."],
+        ["Como funciona o teste grátis?", "Você usa as funções essenciais do GOOD MINT (Leads, Imóveis, Negociações, Tarefas e Relatório) por 3 dias, sem nenhuma cobrança e sem cadastrar cartão. Pra destravar tudo — IA, Automações, Agenda, Pós-Venda e mais — é só assinar o Plano Único quando quiser."],
+        ["Tem garantia de reembolso?", "Sim: se você assinar e não gostar, devolvemos 100% do valor em até 7 dias após a compra. Após 7 dias, não há reembolso — mas o cancelamento continua livre, valendo até o fim do período já pago."],
         ["Posso cancelar quando quiser?", "Sim. O cancelamento é imediato e sem multa. Você mantém o acesso até o fim do período já pago."],
         ["Preciso instalar algo?", "Não. O GOOD MINT roda no navegador do celular, tablet ou computador."],
       ],
@@ -148,37 +151,33 @@ const STRINGS = {
       badges: ["✅ Client informed", "🕒 Zero effort", "🚀 Focus on selling"],
     },
     plans: {
-      title: "Plans and pricing",
-      subtitle: "Start free for 3 days, no card required. Choose a plan whenever you want.",
+      title: "One plan. Everything unlimited.",
+      subtitle: "3-day free trial with the essential features, no card required. Subscribe to unlock everything.",
       perMonth: "/mo",
-      perYear: "/yr",
-      monthlyLabel: "Monthly",
-      annualLabel: "Annual (save 20%)",
-      mostPopular: "⭐ Most popular",
+      badge: "👑 Single Plan",
       cta: "Start free trial",
-      footerNote: "3-day free trial. Cancel anytime.",
-      names: { mint_start: "MINT Start", mint_pro: "MINT Pro" },
-      features: {
-        mint_start: ["30 active leads", "15 listed properties", "Unlimited after-sale clients", "AI-powered messaging hub", "Spreadsheets and export"],
-        mint_pro: ["Unlimited leads and listings", "Everything in MINT Start", "Unlimited after-sale clients", "AI-powered messaging hub", "Spreadsheets and export"],
-      },
+      footerNote: "3-day free trial. No lock-in — cancel anytime.",
+      refundNote: "🛡️ 7-day money-back guarantee: subscribed and changed your mind? Full refund within 7 days of purchase. After 7 days, no refunds.",
+      features: [
+        "Unlimited leads and listings",
+        "Unlimited AI: assistant, content and images",
+        "Automations and Google Calendar agenda",
+        "Full after-sale tracking + Client Portal",
+        "WhatsApp blast, Goals, Finance and Spreadsheets",
+        "Notes, Groups, Meetings and Messaging hub",
+      ],
     },
     faq: {
       title: "Frequently asked questions",
       items: [
-        ["How does the free trial work?", "You use GOOD MINT for 3 days at no charge and without adding a card. If you want to continue afterwards, pick a plan and add payment whenever you're ready."],
+        ["How does the free trial work?", "You use GOOD MINT's essential features (Leads, Listings, Deals, Tasks and Reports) for 3 days at no charge and without adding a card. To unlock everything — AI, Automations, Agenda, After-sale and more — just subscribe to the Single Plan whenever you're ready."],
+        ["Is there a money-back guarantee?", "Yes: if you subscribe and change your mind, we refund 100% within 7 days of purchase. After 7 days there are no refunds — but you can still cancel anytime and keep access until the end of the paid period."],
         ["Can I cancel anytime?", "Yes. Cancellation is immediate and fee-free. You keep access until the end of the period you've already paid for."],
         ["Do I need to install anything?", "No. GOOD MINT runs in the browser on phone, tablet or computer."],
       ],
     },
   },
 } as const;
-
-const PLAN_CODES = ["mint_start", "mint_pro"] as const;
-const PLAN_HIGHLIGHT: Record<(typeof PLAN_CODES)[number], boolean> = {
-  mint_start: false,
-  mint_pro: true,
-};
 
 function Feature({ title, desc, icon }: { title: string; desc: string; icon: string }) {
   return (
@@ -205,7 +204,6 @@ function Step({ n, text }: { n: number; text: string }) {
 
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("pt");
-  const [isAnnual, setIsAnnual] = useState(false);
   const [scrollPct, setScrollPct] = useState(0);
 
   useEffect(() => {
@@ -427,66 +425,33 @@ export default function LandingPage() {
             <p className="mt-2 text-center text-white/70">{s.plans.subtitle}</p>
           </Reveal>
 
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <span className={`text-sm font-medium transition-all duration-300 ${!isAnnual ? "text-white" : "text-white/50"}`}>
-              {s.plans.monthlyLabel}
-            </span>
-            <button
-              onClick={() => setIsAnnual((v) => !v)}
-              aria-label="Alternar cobrança mensal ou anual"
-              className={`relative h-7 w-14 flex-none rounded-full transition-all duration-300 ${isAnnual ? "bg-gm-300" : "bg-white/20"}`}
-            >
-              <span
-                className={`absolute top-1 h-5 w-5 rounded-full bg-white shadow transition-all duration-300 ${isAnnual ? "left-8" : "left-1"}`}
-              />
-            </button>
-            <span className={`text-sm font-medium transition-all duration-300 ${isAnnual ? "text-white" : "text-white/50"}`}>
-              {s.plans.annualLabel}
-            </span>
-          </div>
-
-          <div className="mx-auto mt-10 grid max-w-3xl gap-8 sm:grid-cols-2 lg:gap-10">
-            {PLAN_CODES.map((code, i) => {
-              const cents = isAnnual ? PLAN_PRICING[code].yearlyCents : PLAN_PRICING[code].monthlyCents;
-              return (
-                <Reveal key={code} delay={i * 120}>
-                  <div
-                    className={`relative min-w-[320px] rounded-2xl bg-white p-10 shadow-2xl transition-all duration-300 ${
-                      PLAN_HIGHLIGHT[code] ? "border-2 border-blue-500 shadow-blue-200/50 md:-translate-y-3" : ""
-                    }`}
-                  >
-                    {PLAN_HIGHLIGHT[code] && (
-                      <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-gm-500 px-3 py-1 text-xs font-semibold text-white">
-                        {s.plans.mostPopular}
-                      </span>
-                    )}
-                    <div className="text-sm font-semibold uppercase tracking-wide text-gm-500">
-                      {s.plans.names[code]}
-                    </div>
-                    <div className="mt-2 flex items-end gap-1">
-                      <span className="text-4xl font-bold text-gm-900">{formatBRL(cents)}</span>
-                      <span className="pb-1 text-sm text-gm-700/60">{isAnnual ? s.plans.perYear : s.plans.perMonth}</span>
-                    </div>
-                    <ul className="mt-5 space-y-2 text-sm text-gm-700">
-                      {s.plans.features[code].map((f) => (
-                        <li key={f}>✅ {f}</li>
-                      ))}
-                    </ul>
-                    <Link
-                      href={`/cadastro?plano=${code}&billing=${isAnnual ? "yearly" : "monthly"}`}
-                      className={`mt-6 block rounded-xl py-3 text-center font-semibold transition-all duration-300 ${
-                        PLAN_HIGHLIGHT[code]
-                          ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                          : "bg-gm-50 text-gm-700 hover:bg-gm-100"
-                      }`}
-                    >
-                      {s.plans.cta}
-                    </Link>
-                    <p className="mt-3 text-center text-xs text-gm-700/50">{s.plans.footerNote}</p>
-                  </div>
-                </Reveal>
-              );
-            })}
+          <div className="mx-auto mt-10 max-w-md">
+            <Reveal>
+              <div className="relative rounded-2xl border-2 border-blue-500 bg-white p-10 shadow-2xl shadow-blue-200/50">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gm-500 px-3 py-1 text-xs font-semibold text-white">
+                  {s.plans.badge}
+                </span>
+                <div className="mt-2 flex items-end justify-center gap-1">
+                  <span className="text-5xl font-bold text-gm-900">{formatBRL(PLANO_UNICO_CENTS)}</span>
+                  <span className="pb-1.5 text-sm text-gm-700/60">{s.plans.perMonth}</span>
+                </div>
+                <ul className="mt-6 space-y-2 text-sm text-gm-700">
+                  {s.plans.features.map((f) => (
+                    <li key={f}>✅ {f}</li>
+                  ))}
+                </ul>
+                <Link
+                  href="/cadastro"
+                  className="mt-6 block rounded-xl bg-emerald-600 py-3 text-center font-semibold text-white transition-all duration-300 hover:bg-emerald-700"
+                >
+                  {s.plans.cta}
+                </Link>
+                <p className="mt-3 text-center text-xs text-gm-700/50">{s.plans.footerNote}</p>
+                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-center text-[11px] leading-relaxed text-amber-800">
+                  {s.plans.refundNote}
+                </p>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
