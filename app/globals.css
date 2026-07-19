@@ -212,6 +212,88 @@ body {
   .gm-reveal {
     transition: none !important;
     opacity: 1 !important;
-    transform: none !important;
+    transform: none !important; 
+/* ============================================================ NIGHT GOLD
+   Tema cinematográfico exclusivo da tela de login (não afeta a landing, que
+   continua com gm-radial azul). Tudo CSS puro — sem Three.js/tsparticles. */
+
+/* Fundo azul-marinho → roxo escuro, com deslocamento lento (respiração) */
+.gm-night {
+  background:
+    radial-gradient(1100px 700px at 12% -8%, rgba(30,58,138,0.45) 0%, transparent 55%),
+    radial-gradient(900px 800px at 100% 8%, rgba(120,60,180,0.30) 0%, transparent 50%),
+    radial-gradient(700px 600px at 50% 120%, rgba(245,201,74,0.10) 0%, transparent 55%),
+    linear-gradient(160deg, #0A0F1F 0%, #140B26 55%, #1A1030 100%);
+  background-size: 160% 160%;
+  animation: gm-night-shift 18s ease-in-out infinite;
+}
+@keyframes gm-night-shift {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 100% 40%; }
+}
+
+/* Campo de estrelas em CSS: dois planos tilados (branco + dourado) que
+   flutuam devagar em velocidades diferentes, dando profundidade de nebulosa. */
+.gm-stars { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.gm-stars::before, .gm-stars::after {
+  content: ""; position: absolute; inset: -50%;
+  background-repeat: repeat;
+}
+.gm-stars::before {
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(255,255,255,0.55), transparent),
+    radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.40), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,0.35), transparent),
+    radial-gradient(1.6px 1.6px at 85% 25%, rgba(245,201,74,0.65), transparent),
+    radial-gradient(1px 1px at 12% 65%, rgba(255,255,255,0.30), transparent),
+    radial-gradient(1.4px 1.4px at 55% 15%, rgba(245,201,74,0.50), transparent);
+  background-size: 320px 320px;
+  animation: gm-stars-drift 70s linear infinite;
+}
+.gm-stars::after {
+  background-image:
+    radial-gradient(1px 1px at 30% 20%, rgba(255,255,255,0.35), transparent),
+    radial-gradient(1.6px 1.6px at 65% 70%, rgba(245,201,74,0.55), transparent),
+    radial-gradient(1px 1px at 90% 45%, rgba(255,255,255,0.30), transparent),
+    radial-gradient(1.2px 1.2px at 15% 90%, rgba(255,255,255,0.30), transparent),
+    radial-gradient(1px 1px at 48% 50%, rgba(245,201,74,0.40), transparent);
+  background-size: 440px 440px;
+  animation: gm-stars-drift 110s linear infinite reverse;
+}
+@keyframes gm-stars-drift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(60px, 40px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gm-night, .gm-stars::before, .gm-stars::after { animation: none; }
+}
+
+/* Card de vidro tingido de dourado (glassmorphism premium do login) */
+.gm-night-glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 60px -20px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(245,201,74,0.04);
+}
+
+/* Botão "Entrar" com gradiente azul → dourado */
+.gm-night-btn {
+  background-image: linear-gradient(100deg, #1E3A8A 0%, #3B5BC4 45%, #F5C94A 100%);
+  background-size: 160% 100%;
+  background-position: 0% 0%;
+  transition: background-position 0.5s ease, transform 0.25s ease, box-shadow 0.25s ease;
+}
+.gm-night-btn:hover {
+  background-position: 100% 0%;
+  transform: scale(1.02);
+  box-shadow: 0 12px 30px -8px rgba(245, 201, 74, 0.45);
+}
+
+/* Título com brilho dourado suave (o "text-shadow" do prompt) */
+.gm-night-title { text-shadow: 0 0 40px rgba(245, 201, 74, 0.25); }
+
+     
+     
   }
 }
