@@ -1,13 +1,15 @@
-// app/page.tsx — Landing Page (tela 1). Pública. Paleta azul/branco (seção 6).
-// "use client" só por causa do toggle de idioma PT/EN (única página pública
-// com esse toggle, por pedido explícito — o resto do app continua só em PT).
+// app/page.tsx — Landing Page (tela 1) — versão "Night Gold" premium.
+// Página pública repintada na paleta NIGHT GOLD (#0A0F1F/roxo/dourado #F5C94A),
+// reaproveitando as classes gm-night* de app/globals.css (mesmas do login) —
+// sem Framer Motion / AOS / lucide / react-countup. O scroll reveal usa o
+// componente Reveal (IntersectionObserver nativo) que já existia. "use client"
+// só por causa do toggle de idioma PT/EN e do scroll do cabeçalho.
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Logo } from "@/components/Logo";
 import { CrystalSphere } from "@/components/CrystalSphere";
-import { FloatingEmojis } from "@/components/FloatingEmojis";
 import { Footer } from "@/components/Footer";
 import { Reveal } from "@/components/Reveal";
 import { formatBRL } from "@/lib/format";
@@ -21,11 +23,10 @@ const STRINGS = {
     nav: { features: "Funcionalidades", plan: "Plano", about: "Sobre", login: "Login", cta: "Teste grátis" },
     hero: {
       badge: "CRM para corretores autônomos",
-      title1: "Organize seus leads e imóveis — e acompanhe o cliente",
-      title2: "até depois da venda.",
-      subtitle: (
-        <>O único CRM que cuida da pré-venda <b>e</b> da pós-venda. Nunca mais ouça "cadê meu processo?" — o cliente é avisado automaticamente a cada etapa.</>
-      ),
+      title1: "O CRM do corretor autônomo que vai",
+      titleHighlight: "além da venda.",
+      subtitle: "Organize seus leads e imóveis — e acompanhe o cliente até depois da venda. O único CRM que cuida da pré-venda e da pós-venda.",
+      trust: "🔔 Nunca mais ouça \"cadê meu processo?\" — o cliente é avisado automaticamente a cada etapa.",
       ctaPrimary: "Comece seu teste grátis de 3 dias",
       ctaSecondary: "Ver funcionalidades",
       note: "Teste por 3 dias sem compromisso. Seu cartão só será cobrado se você continuar.",
@@ -33,21 +34,25 @@ const STRINGS = {
     },
     how: {
       title: "Como funciona",
+      subtitle: "Do cadastro à entrega das chaves, em 5 passos.",
       steps: [
-        "Cadastre-se e comece o teste grátis",
-        "Adicione seus leads e imóveis",
-        "Organize seu funil de vendas",
-        "Feche a venda",
-        "Mantenha o cliente informado até a entrega das chaves",
+        { icon: "🙋", t: "Cadastre-se", d: "Comece o teste grátis em segundos, sem cartão." },
+        { icon: "🗂️", t: "Adicione leads e imóveis", d: "Toda a sua carteira organizada num lugar só." },
+        { icon: "📊", t: "Organize o funil", d: "Arraste leads entre as etapas do Kanban." },
+        { icon: "🤝", t: "Feche a venda", d: "Registre a negociação e comemore." },
+        { icon: "🔔", t: "Acompanhe o pós-venda", d: "O cliente é avisado a cada etapa, até as chaves." },
       ],
     },
     features: {
       title: "Tudo que o corretor autônomo precisa",
+      subtitle: "Ferramentas poderosas para cada etapa da sua jornada.",
       items: [
-        { icon: "🗂️", title: "Funil Kanban", desc: "Arraste leads entre etapas: Novo → Contato → Visita → Proposta → Fechado." },
+        { icon: "📊", title: "Funil Kanban", desc: "Arraste leads entre etapas: Novo → Contato → Visita → Proposta → Fechado." },
         { icon: "🏠", title: "Cadastro de imóveis", desc: "Fotos, endereço, tipo, valor e status — tudo organizado." },
-        { icon: "🤝", title: "Acompanhamento de Pós-Venda", desc: "Barra de progresso da documentação até a entrega das chaves." },
+        { icon: "📦", title: "Pós-Venda", desc: "Barra de progresso da documentação até a entrega das chaves." },
         { icon: "🔔", title: "Alertas automáticos", desc: "O cliente é avisado a cada etapa, sem você precisar lembrar." },
+        { icon: "🤖", title: "IA Assistente", desc: "Gere conteúdo, imagens e respostas automáticas com inteligência artificial." },
+        { icon: "💰", title: "Financeiro", desc: "Controle de comissões, metas e fluxo de caixa." },
       ],
     },
     diff: {
@@ -61,13 +66,7 @@ const STRINGS = {
     impact: {
       painBadge: "⚡ A maior dor do corretor resolvida",
       title: 'Chega de cliente no seu WhatsApp perguntando "cadê meu processo?"',
-      body: (
-        <>
-          Com a GOOD MINT, ele é avisado automaticamente a cada etapa. Você{" "}
-          <b className="text-gm-900">para de apagar incêndios</b> e{" "}
-          <b className="text-gm-900">volta a vender</b>.
-        </>
-      ),
+      body: "Com a GOOD MINT, ele é avisado automaticamente a cada etapa. Você para de apagar incêndios e volta a vender.",
       badges: ["✅ Cliente informado", "🕒 Zero esforço", "🚀 Foco em vendas"],
     },
     plans: {
@@ -89,6 +88,7 @@ const STRINGS = {
     },
     faq: {
       title: "Perguntas frequentes",
+      subtitle: "Tire suas dúvidas sobre o GOOD MINT.",
       items: [
         ["Como funciona o teste grátis?", "Você usa as funções essenciais do GOOD MINT (Leads, Imóveis, Negociações, Tarefas e Relatório) por 3 dias, sem nenhuma cobrança e sem cadastrar cartão. Pra destravar tudo — IA, Automações, Agenda, Pós-Venda e mais — é só assinar o Plano Único quando quiser."],
         ["Tem garantia de reembolso?", "Sim: se você assinar e não gostar, devolvemos 100% do valor em até 7 dias após a compra. Após 7 dias, não há reembolso — mas o cancelamento continua livre, valendo até o fim do período já pago."],
@@ -101,11 +101,10 @@ const STRINGS = {
     nav: { features: "Features", plan: "Pricing", about: "About", login: "Log in", cta: "Free trial" },
     hero: {
       badge: "CRM for independent real estate agents",
-      title1: "Organize your leads and listings — and follow up with clients",
-      title2: "long after the sale.",
-      subtitle: (
-        <>The only CRM that handles both the sale <b>and</b> the after-sale journey. Never hear "what's the status of my deal?" again — clients are notified automatically at every step.</>
-      ),
+      title1: "The CRM for independent agents that goes",
+      titleHighlight: "beyond the sale.",
+      subtitle: "Organize your leads and listings — and follow up with clients long after the sale. The only CRM that handles both the sale and the after-sale.",
+      trust: "🔔 Never hear \"what's the status of my deal?\" again — clients are notified automatically at every step.",
       ctaPrimary: "Start your free 3-day trial",
       ctaSecondary: "See features",
       note: "Try it free for 3 days, no commitment. Your card is only charged if you continue.",
@@ -113,21 +112,25 @@ const STRINGS = {
     },
     how: {
       title: "How it works",
+      subtitle: "From sign-up to key handover, in 5 steps.",
       steps: [
-        "Sign up and start your free trial",
-        "Add your leads and listings",
-        "Organize your sales pipeline",
-        "Close the deal",
-        "Keep the client updated until the keys are handed over",
+        { icon: "🙋", t: "Sign up", d: "Start your free trial in seconds, no card." },
+        { icon: "🗂️", t: "Add leads and listings", d: "Your whole portfolio in one place." },
+        { icon: "📊", t: "Organize your pipeline", d: "Drag leads across the Kanban stages." },
+        { icon: "🤝", t: "Close the deal", d: "Log the deal and celebrate." },
+        { icon: "🔔", t: "Track the after-sale", d: "The client is notified at every step, up to the keys." },
       ],
     },
     features: {
       title: "Everything an independent agent needs",
+      subtitle: "Powerful tools for every step of your journey.",
       items: [
-        { icon: "🗂️", title: "Kanban pipeline", desc: "Drag leads across stages: New → Contact → Visit → Proposal → Closed." },
+        { icon: "📊", title: "Kanban pipeline", desc: "Drag leads across stages: New → Contact → Visit → Proposal → Closed." },
         { icon: "🏠", title: "Listing management", desc: "Photos, address, type, price and status — all organized." },
-        { icon: "🤝", title: "After-sale tracking", desc: "Progress bar from paperwork all the way to key handover." },
+        { icon: "📦", title: "After-sale tracking", desc: "Progress bar from paperwork all the way to key handover." },
         { icon: "🔔", title: "Automatic alerts", desc: "The client is notified at every stage — you don't have to remember." },
+        { icon: "🤖", title: "AI assistant", desc: "Generate content, images and automatic replies with AI." },
+        { icon: "💰", title: "Finance", desc: "Track commissions, goals and cash flow." },
       ],
     },
     diff: {
@@ -141,13 +144,7 @@ const STRINGS = {
     impact: {
       painBadge: "⚡ The broker's biggest pain point, solved",
       title: 'No more clients messaging you asking "what\'s the status of my deal?"',
-      body: (
-        <>
-          With GOOD MINT, they're notified automatically at every step. You{" "}
-          <b className="text-gm-900">stop putting out fires</b> and{" "}
-          <b className="text-gm-900">get back to selling</b>.
-        </>
-      ),
+      body: "With GOOD MINT, they're notified automatically at every step. You stop putting out fires and get back to selling.",
       badges: ["✅ Client informed", "🕒 Zero effort", "🚀 Focus on selling"],
     },
     plans: {
@@ -169,6 +166,7 @@ const STRINGS = {
     },
     faq: {
       title: "Frequently asked questions",
+      subtitle: "Clear up your doubts about GOOD MINT.",
       items: [
         ["How does the free trial work?", "You use GOOD MINT's essential features (Leads, Listings, Deals, Tasks and Reports) for 3 days at no charge and without adding a card. To unlock everything — AI, Automations, Agenda, After-sale and more — just subscribe to the Single Plan whenever you're ready."],
         ["Is there a money-back guarantee?", "Yes: if you subscribe and change your mind, we refund 100% within 7 days of purchase. After 7 days there are no refunds — but you can still cancel anytime and keep access until the end of the paid period."],
@@ -181,23 +179,12 @@ const STRINGS = {
 
 function Feature({ title, desc, icon }: { title: string; desc: string; icon: string }) {
   return (
-    <div className="gm-card p-8">
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-gm-50 text-2xl">
+    <div className="gm-night-glass group h-full rounded-2xl p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#F5C94A]/40">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-[#F5C94A]/[0.12] text-2xl gm-breathe">
         {icon}
       </div>
-      <h3 className="text-lg font-semibold text-gm-900">{title}</h3>
-      <p className="mt-1 text-sm text-gm-700/70">{desc}</p>
-    </div>
-  );
-}
-
-function Step({ n, text }: { n: number; text: string }) {
-  return (
-    <div className="flex items-start gap-3">
-      <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-gm-500 text-sm font-bold text-white">
-        {n}
-      </span>
-      <p className="pt-1 text-sm text-white/90">{text}</p>
+      <h3 className="text-lg font-semibold text-white">{title}</h3>
+      <p className="mt-1 text-sm text-[#B0B8C8]">{desc}</p>
     </div>
   );
 }
@@ -205,20 +192,21 @@ function Step({ n, text }: { n: number; text: string }) {
 export default function LandingPage() {
   const [lang, setLang] = useState<Lang>("pt");
   const [scrollPct, setScrollPct] = useState(0);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem("gm-lang");
     if (saved === "en" || saved === "pt") setLang(saved);
   }, []);
 
-  // Barra de progresso de leitura ("fio condutor" azul) — throttled via rAF
-  // pra não disparar setState em toda linha de scroll.
+  // Barra de progresso de leitura (fio dourado) + fundo sólido do header ao rolar.
   useEffect(() => {
     let ticking = false;
     function update() {
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
       setScrollPct(max > 0 ? Math.min(100, (window.scrollY / max) * 100) : 0);
+      setScrolled(window.scrollY > 20);
       ticking = false;
     }
     function onScroll() {
@@ -241,50 +229,40 @@ export default function LandingPage() {
   const s = STRINGS[lang];
 
   return (
-    <main className="min-h-screen bg-white">
-      {/* Barra de progresso de leitura — o "fio condutor" azul da página */}
+    <main className="gm-night relative min-h-screen overflow-hidden text-white">
+      {/* Campo de estrelas douradas por trás de toda a página */}
+      <div className="gm-stars" aria-hidden="true" />
+
+      {/* Barra de progresso de leitura — fio dourado */}
       <div className="fixed left-0 top-0 z-40 h-1 w-full md:h-full md:w-1">
-        <div
-          className="block h-full bg-gm-500 transition-[width] duration-150 ease-out md:hidden"
-          style={{ width: `${scrollPct}%` }}
-        />
-        <div
-          className="hidden bg-gm-500 transition-[height] duration-150 ease-out md:block"
-          style={{ height: `${scrollPct}%` }}
-        />
+        <div className="block h-full bg-[#F5C94A] transition-[width] duration-150 ease-out md:hidden" style={{ width: `${scrollPct}%` }} />
+        <div className="hidden bg-[#F5C94A] transition-[height] duration-150 ease-out md:block" style={{ height: `${scrollPct}%` }} />
       </div>
 
-      {/* Cabeçalho fixo */}
-      <header className="sticky top-0 z-30 border-b border-gm-100 bg-white/90 backdrop-blur">
+      {/* Cabeçalho fixo — transparente no topo, vidro escuro ao rolar */}
+      <header className={`sticky top-0 z-30 transition-colors duration-300 ${scrolled ? "border-b border-white/10 bg-[#0A0F1F]/80 backdrop-blur-xl" : "border-b border-transparent"}`}>
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3">
-          <Logo />
+          <Logo variant="gold" />
           <div className="hidden items-center gap-6 md:flex">
-            <nav className="flex items-center gap-6 text-sm font-medium text-gm-700">
-              <a href="#funcionalidades" className="hover:text-gm-500">{s.nav.features}</a>
-              <a href="#plano" className="hover:text-gm-500">{s.nav.plan}</a>
-              <a href="#faq" className="hover:text-gm-500">{s.nav.about}</a>
+            <nav className="flex items-center gap-6 text-sm font-medium text-[#B0B8C8]">
+              <a href="#funcionalidades" className="transition-colors hover:text-[#F5C94A]">{s.nav.features}</a>
+              <a href="#plano" className="transition-colors hover:text-[#F5C94A]">{s.nav.plan}</a>
+              <a href="#faq" className="transition-colors hover:text-[#F5C94A]">{s.nav.about}</a>
             </nav>
-            <div className="h-6 w-px bg-gm-100" aria-hidden="true" />
+            <div className="h-6 w-px bg-white/10" aria-hidden="true" />
           </div>
           <div className="flex items-center gap-3">
             <button
               onClick={toggleLang}
               aria-label="Trocar idioma / Switch language"
-              className="rounded-full border border-gm-200 px-3 py-1 text-xs font-medium text-gm-700 hover:bg-gm-50"
+              className="rounded-full border border-white/15 px-3 py-1 text-xs font-medium text-[#B0B8C8] transition-colors hover:border-[#F5C94A]/60 hover:text-[#F5C94A]"
             >
               {lang === "pt" ? "🇧🇷 PT" : "🇺🇸 EN"}
             </button>
-            <div className="hidden h-5 w-px bg-gm-200 sm:block" aria-hidden="true" />
-            <Link
-              href="/login"
-              className="rounded-lg px-4 py-2 text-sm font-semibold text-gm-700 hover:bg-gm-50"
-            >
+            <Link href="/login" className="rounded-lg px-4 py-2 text-sm font-semibold text-[#B0B8C8] transition-colors hover:text-white">
               {s.nav.login}
             </Link>
-            <Link
-              href="/cadastro"
-              className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-gm-600"
-            >
+            <Link href="/cadastro" className="gm-night-btn rounded-lg px-4 py-2 text-sm font-semibold text-white shadow-sm">
               {s.nav.cta}
             </Link>
           </div>
@@ -292,105 +270,109 @@ export default function LandingPage() {
       </header>
 
       {/* Hero */}
-      <section className="gm-radial gm-radial-animated relative overflow-hidden">
-        <FloatingEmojis />
-        <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-5 py-20 md:grid-cols-2">
+      <section className="relative overflow-hidden">
+        <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-10 px-5 py-20 md:grid-cols-2 md:py-28">
           <Reveal>
-            <span className="inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-white/90 ring-1 ring-white/20">
+            <span className="inline-block rounded-full border border-[#F5C94A]/20 bg-[#F5C94A]/[0.12] px-3 py-1 text-xs font-semibold text-[#F5C94A]">
               {s.hero.badge}
             </span>
-            <h1 className="mt-4 text-4xl font-bold leading-tight text-white md:text-5xl lg:text-6xl">
+            <h1 className="gm-night-title mt-4 text-4xl font-extrabold leading-tight text-white md:text-5xl lg:text-6xl">
               {s.hero.title1}{" "}
-              <span className="text-gm-300">{s.hero.title2}</span>
+              <span className="text-[#F5C94A]">{s.hero.titleHighlight}</span>
             </h1>
-            <p className="mt-4 max-w-md text-lg text-white/80">{s.hero.subtitle}</p>
+            <p className="mt-4 max-w-md text-lg text-[#B0B8C8]">{s.hero.subtitle}</p>
+            <p className="mt-5 inline-block rounded-full border border-[#F5C94A]/15 bg-[#F5C94A]/[0.08] px-5 py-2 text-sm text-[#F5C94A]">
+              {s.hero.trust}
+            </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/cadastro"
-                className="rounded-xl bg-white px-6 py-3 font-semibold text-gm-700 shadow-lg hover:bg-gm-50"
-              >
+              <Link href="/cadastro" className="gm-night-btn rounded-xl px-6 py-3 font-semibold text-white shadow-lg">
                 {s.hero.ctaPrimary}
               </Link>
-              <a
-                href="#funcionalidades"
-                className="rounded-xl border border-white/30 px-6 py-3 font-semibold text-white hover:bg-white/10"
-              >
+              <a href="#funcionalidades" className="rounded-xl border border-[#F5C94A]/50 px-6 py-3 font-semibold text-[#F5C94A] transition-colors hover:bg-[#F5C94A]/10">
                 {s.hero.ctaSecondary}
               </a>
             </div>
-            <p className="mt-3 text-xs text-white/60">{s.hero.note}</p>
+            <p className="mt-3 text-xs text-[#6A7A8A]">{s.hero.note}</p>
           </Reveal>
 
-          {/* Esfera "bola de cristal" — impecável, sem dados atrelados */}
           <div className="relative mx-auto hidden flex-col items-center md:flex">
-            <div className="gm-breathe absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-br from-gm-300/30 to-gm-500/20 blur-3xl" />
+            <div className="gm-breathe absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#F5C94A]/10 blur-3xl" />
             <div className="relative">
-              <CrystalSphere empty={false} caption={s.hero.sphereCaption} />
+              <CrystalSphere empty={false} accent="gold" caption={s.hero.sphereCaption} />
             </div>
           </div>
         </div>
       </section>
 
-      {/* Como funciona */}
-      <section className="gm-radial relative border-t border-white/10">
+      {/* Como funciona — timeline dourada */}
+      <section className="relative border-t border-white/5">
+        <div className="mx-auto max-w-5xl px-5 py-20">
+          <Reveal>
+            <h2 className="text-center text-3xl font-bold text-white md:text-4xl">{s.how.title}</h2>
+            <div className="mx-auto mt-2 h-0.5 w-16 rounded-full bg-[#F5C94A]" />
+            <p className="mt-3 text-center text-[#B0B8C8]">{s.how.subtitle}</p>
+          </Reveal>
+
+          <div className="relative mt-12">
+            {/* linha vertical dourada (fio condutor) */}
+            <div className="absolute left-6 top-0 hidden h-full w-0.5 bg-gradient-to-b from-[#F5C94A] via-[#F5C94A]/40 to-transparent sm:block" aria-hidden="true" />
+            <div className="space-y-6">
+              {s.how.steps.map((step, i) => (
+                <Reveal key={i} delay={i * 80}>
+                  <div className="flex items-start gap-4">
+                    <div className="relative z-10 flex h-12 w-12 flex-none items-center justify-center rounded-full border border-[#F5C94A]/40 bg-[#0A0F1F] text-xl shadow-[0_0_20px_rgba(245,201,74,0.25)]">
+                      {step.icon}
+                    </div>
+                    <div className="gm-night-glass flex-1 rounded-2xl p-5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#F5C94A]">{String(i + 1).padStart(2, "0")}</span>
+                        <h3 className="font-semibold text-white">{step.t}</h3>
+                      </div>
+                      <p className="mt-1 text-sm text-[#B0B8C8]">{step.d}</p>
+                    </div>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Funcionalidades */}
+      <section id="funcionalidades" className="relative border-t border-white/5">
         <div className="mx-auto max-w-6xl px-5 py-20">
           <Reveal>
-            <h2 className="text-center text-2xl font-bold text-white">{s.how.title}</h2>
+            <h2 className="text-center text-3xl font-bold text-white md:text-4xl">{s.features.title}</h2>
+            <p className="mt-3 text-center text-[#B0B8C8]">{s.features.subtitle}</p>
           </Reveal>
-          <div className="mt-8 grid gap-5 md:grid-cols-5">
-            {s.how.steps.map((text, i) => (
-              <Reveal key={i} delay={i * 80}>
-                <Step n={i + 1} text={text} />
+          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {s.features.items.map((f, i) => (
+              <Reveal key={f.title} delay={i * 70}>
+                <Feature icon={f.icon} title={f.title} desc={f.desc} />
               </Reveal>
             ))}
           </div>
         </div>
-        {/* Onda suave marcando a transição pro fundo branco de Funcionalidades */}
-        <svg
-          className="absolute -bottom-1 left-0 w-full text-white"
-          viewBox="0 0 1440 60"
-          fill="currentColor"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <path d="M0,32 C240,64 480,0 720,16 C960,32 1200,64 1440,32 L1440,60 L0,60 Z" />
-        </svg>
       </section>
 
-      {/* Funcionalidades */}
-      <section id="funcionalidades" className="mx-auto max-w-6xl px-5 py-20">
-        <Reveal>
-          <h2 className="text-center text-3xl font-bold text-gm-900">{s.features.title}</h2>
-        </Reveal>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {s.features.items.map((f, i) => (
-            <Reveal key={f.title} delay={i * 80}>
-              <Feature icon={f.icon} title={f.title} desc={f.desc} />
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* Diferencial: pré-venda + pós-venda */}
-      <section className="bg-gm-50 py-20">
-        <div className="mx-auto max-w-5xl px-5">
-          <div className="grid gap-8 md:grid-cols-2">
+      {/* Problema vs Solução */}
+      <section className="relative border-t border-white/5">
+        <div className="mx-auto max-w-5xl px-5 py-20">
+          <div className="grid gap-6 md:grid-cols-2">
             <Reveal>
-              <div className="gm-card p-8">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gm-500">
-                  {s.diff.problemLabel}
-                </span>
-                <h3 className="mt-2 text-xl font-bold text-gm-900">{s.diff.problemTitle}</h3>
-                <p className="mt-3 text-sm text-gm-700/70">{s.diff.problemBody}</p>
+              <div className="h-full rounded-2xl border border-red-400/20 bg-red-500/[0.06] p-8">
+                <span className="text-2xl">⚠️</span>
+                <span className="mt-3 block text-xs font-semibold uppercase tracking-wide text-red-300/80">{s.diff.problemLabel}</span>
+                <h3 className="mt-1 text-xl font-bold text-white">{s.diff.problemTitle}</h3>
+                <p className="mt-3 text-sm text-[#B0B8C8]">{s.diff.problemBody}</p>
               </div>
             </Reveal>
             <Reveal delay={120}>
-              <div className="gm-card border-2 border-gm-300 p-8">
-                <span className="text-xs font-semibold uppercase tracking-wide text-gm-500">
-                  {s.diff.solutionLabel}
-                </span>
-                <h3 className="mt-2 text-xl font-bold text-gm-900">{s.diff.solutionTitle}</h3>
-                <p className="mt-3 text-sm text-gm-700/70">{s.diff.solutionBody}</p>
+              <div className="h-full rounded-2xl border border-[#F5C94A]/25 bg-[#F5C94A]/[0.06] p-8">
+                <span className="text-2xl">⭐</span>
+                <span className="mt-3 block text-xs font-semibold uppercase tracking-wide text-[#F5C94A]">{s.diff.solutionLabel}</span>
+                <h3 className="mt-1 text-xl font-bold text-white">{s.diff.solutionTitle}</h3>
+                <p className="mt-3 text-sm text-[#B0B8C8]">{s.diff.solutionBody}</p>
               </div>
             </Reveal>
           </div>
@@ -398,56 +380,55 @@ export default function LandingPage() {
       </section>
 
       {/* Bloco de impacto */}
-      <section className="mx-auto max-w-4xl px-5 pt-20">
-        <Reveal>
-          <div className="rounded-2xl bg-gradient-to-b from-gm-50 to-white p-8 text-center shadow-lg sm:p-12">
-            <span className="inline-block rounded-full bg-red-100 px-4 py-1.5 text-sm font-semibold text-red-700">
-              {s.impact.painBadge}
-            </span>
-            <h2 className="mt-4 text-xl font-bold text-gm-900 sm:text-2xl">{s.impact.title}</h2>
-            <p className="mt-3 text-sm text-gm-700/70 sm:text-base">{s.impact.body}</p>
-            <div className="mt-5 flex flex-wrap justify-center gap-3">
-              {s.impact.badges.map((b) => (
-                <span key={b} className="rounded-full bg-white px-4 py-1.5 text-sm font-medium text-gm-700 shadow-sm">
-                  {b}
-                </span>
-              ))}
+      <section className="relative border-t border-white/5">
+        <div className="mx-auto max-w-4xl px-5 py-20">
+          <Reveal>
+            <div className="gm-night-glass rounded-2xl p-8 text-center sm:p-12">
+              <span className="inline-block rounded-full border border-[#F5C94A]/20 bg-[#F5C94A]/[0.12] px-4 py-1.5 text-sm font-semibold text-[#F5C94A]">
+                {s.impact.painBadge}
+              </span>
+              <h2 className="gm-night-title mt-4 text-2xl font-bold text-white sm:text-3xl">{s.impact.title}</h2>
+              <p className="mt-3 text-[#B0B8C8]">{s.impact.body}</p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                {s.impact.badges.map((b) => (
+                  <span key={b} className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-1.5 text-sm font-medium text-white">
+                    {b}
+                  </span>
+                ))}
+              </div>
             </div>
-          </div>
-        </Reveal>
+          </Reveal>
+        </div>
       </section>
 
-      {/* Planos */}
-      <section id="plano" className="gm-radial">
+      {/* Plano Único */}
+      <section id="plano" className="relative border-t border-white/5">
         <div className="mx-auto max-w-6xl px-5 py-20">
           <Reveal>
-            <h2 className="text-center text-3xl font-bold text-white">{s.plans.title}</h2>
-            <p className="mt-2 text-center text-white/70">{s.plans.subtitle}</p>
+            <h2 className="text-center text-3xl font-bold text-white md:text-4xl">{s.plans.title}</h2>
+            <p className="mt-2 text-center text-[#B0B8C8]">{s.plans.subtitle}</p>
           </Reveal>
 
           <div className="mx-auto mt-10 max-w-md">
             <Reveal>
-              <div className="relative rounded-2xl border-2 border-blue-500 bg-white p-10 shadow-2xl shadow-blue-200/50">
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-gm-500 px-3 py-1 text-xs font-semibold text-white">
+              <div className="relative rounded-2xl border-2 border-[#F5C94A]/70 bg-white/[0.03] p-10 shadow-2xl shadow-[#F5C94A]/10 backdrop-blur-xl">
+                <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-[#F5C94A] px-3 py-1 text-xs font-bold text-[#0A0F1F]">
                   {s.plans.badge}
                 </span>
                 <div className="mt-2 flex items-end justify-center gap-1">
-                  <span className="text-5xl font-bold text-gm-900">{formatBRL(PLANO_UNICO_CENTS)}</span>
-                  <span className="pb-1.5 text-sm text-gm-700/60">{s.plans.perMonth}</span>
+                  <span className="text-5xl font-bold text-white">{formatBRL(PLANO_UNICO_CENTS)}</span>
+                  <span className="pb-1.5 text-sm text-[#B0B8C8]">{s.plans.perMonth}</span>
                 </div>
-                <ul className="mt-6 space-y-2 text-sm text-gm-700">
+                <ul className="mt-6 space-y-2 text-sm text-[#B0B8C8]">
                   {s.plans.features.map((f) => (
                     <li key={f}>✅ {f}</li>
                   ))}
                 </ul>
-                <Link
-                  href="/cadastro"
-                  className="mt-6 block rounded-xl bg-emerald-600 py-3 text-center font-semibold text-white transition-all duration-300 hover:bg-emerald-700"
-                >
+                <Link href="/cadastro" className="gm-night-btn mt-6 block rounded-xl py-3 text-center font-semibold text-white shadow-lg">
                   {s.plans.cta}
                 </Link>
-                <p className="mt-3 text-center text-xs text-gm-700/50">{s.plans.footerNote}</p>
-                <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-center text-[11px] leading-relaxed text-amber-800">
+                <p className="mt-3 text-center text-xs text-[#6A7A8A]">{s.plans.footerNote}</p>
+                <p className="mt-3 rounded-lg border border-[#F5C94A]/20 bg-[#F5C94A]/[0.08] p-2.5 text-center text-[11px] leading-relaxed text-[#F5C94A]">
                   {s.plans.refundNote}
                 </p>
               </div>
@@ -457,19 +438,25 @@ export default function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="mx-auto max-w-3xl px-5 py-20">
-        <Reveal>
-          <h2 className="text-center text-3xl font-bold text-gm-900">{s.faq.title}</h2>
-        </Reveal>
-        <div className="mt-8 space-y-4">
-          {s.faq.items.map(([q, a], i) => (
-            <Reveal key={q} delay={i * 60}>
-              <details className="gm-card group p-5">
-                <summary className="cursor-pointer list-none font-semibold text-gm-900">{q}</summary>
-                <p className="mt-2 text-sm text-gm-700/70">{a}</p>
-              </details>
-            </Reveal>
-          ))}
+      <section id="faq" className="relative border-t border-white/5">
+        <div className="mx-auto max-w-3xl px-5 py-20">
+          <Reveal>
+            <h2 className="text-center text-3xl font-bold text-white md:text-4xl">{s.faq.title}</h2>
+            <p className="mt-2 text-center text-[#B0B8C8]">{s.faq.subtitle}</p>
+          </Reveal>
+          <div className="mt-8 space-y-3">
+            {s.faq.items.map(([q, a], i) => (
+              <Reveal key={q} delay={i * 60}>
+                <details className="gm-night-glass group rounded-xl p-5">
+                  <summary className="flex cursor-pointer list-none items-center justify-between font-semibold text-white">
+                    {q}
+                    <span className="text-[#F5C94A] transition-transform duration-300 group-open:rotate-45">+</span>
+                  </summary>
+                  <p className="mt-2 text-sm text-[#B0B8C8]">{a}</p>
+                </details>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
