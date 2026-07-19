@@ -1,6 +1,7 @@
 // components/CrystalSphere.tsx — "bola de cristal do negócio" (seção 2 da spec).
 // Esfera 3D de partículas em canvas, com parallax magnético no mouse e
-// respiração orgânica. Tons de azul. Estado vazio exibe a mensagem da spec.
+// respiração orgânica. Tons de azul (padrão) ou dourado (tema Night Gold do
+// login, via prop accent). Estado vazio exibe a mensagem da spec.
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -15,10 +16,13 @@ interface Particle {
 export function CrystalSphere({
   empty,
   caption,
+  accent = "blue",
 }: {
   empty: boolean;
   /** Sobrescreve a legenda padrão (usado na landing, fora do contexto de dados). */
   caption?: string;
+  /** Paleta das partículas: azul (padrão) ou dourado (tema Night Gold do login). */
+  accent?: "blue" | "gold";
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const mouse = useRef({ x: 0, y: 0 });
@@ -83,16 +87,26 @@ export function CrystalSphere({
         const py = cy + p.y;
         ctx.beginPath();
         ctx.arc(px, py, p.r * (0.4 + scale), 0, Math.PI * 2);
-        // tons de azul: mais claro na frente
-        const blue = Math.floor(120 + scale * 130);
-        ctx.fillStyle = `rgba(${80 + scale * 40}, ${150 + scale * 60}, ${blue + 40}, ${alpha})`;
+        if (accent === "gold") {
+          // Night Gold: azul claro ao fundo, dourado brilhante na frente.
+          ctx.fillStyle = `rgba(${140 + scale * 105}, ${170 + scale * 30}, ${210 - scale * 130}, ${alpha})`;
+        } else {
+          // tons de azul: mais claro na frente
+          const blue = Math.floor(120 + scale * 130);
+          ctx.fillStyle = `rgba(${80 + scale * 40}, ${150 + scale * 60}, ${blue + 40}, ${alpha})`;
+        }
         ctx.fill();
       }
 
       // brilho central
       const grd = ctx.createRadialGradient(cx, cy, 6, cx, cy, radius);
-      grd.addColorStop(0, "rgba(120,180,255,0.18)");
-      grd.addColorStop(1, "rgba(30,99,196,0)");
+      if (accent === "gold") {
+        grd.addColorStop(0, "rgba(245,201,74,0.22)");
+        grd.addColorStop(1, "rgba(245,201,74,0)");
+      } else {
+        grd.addColorStop(0, "rgba(120,180,255,0.18)");
+        grd.addColorStop(1, "rgba(30,99,196,0)");
+      }
       ctx.fillStyle = grd;
       ctx.beginPath();
       ctx.arc(cx, cy, radius, 0, Math.PI * 2);
@@ -111,7 +125,7 @@ export function CrystalSphere({
       cancelAnimationFrame(raf);
       canvas.removeEventListener("mousemove", onMove);
     };
-  }, [empty]);
+  }, [empty, accent]);
 
   return (
     <div className="relative flex flex-col items-center">
