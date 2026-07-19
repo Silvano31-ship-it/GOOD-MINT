@@ -21,6 +21,7 @@ export function SidebarMenuItem({
   icon,
   active,
   transparent,
+  badge,
   onNavigate,
 }: {
   href: string;
@@ -28,6 +29,7 @@ export function SidebarMenuItem({
   icon: string;
   active: boolean;
   transparent?: boolean;
+  badge?: number;
   onNavigate?: () => void;
 }) {
   const [ripples, setRipples] = useState<Ripple[]>([]);
@@ -86,6 +88,11 @@ export function SidebarMenuItem({
         {icon}
       </span>
       {label}
+      {typeof badge === "number" && badge > 0 && (
+        <span className="ml-auto flex h-5 min-w-5 flex-none items-center justify-center rounded-full bg-[#FF3B5C] px-1.5 text-[10px] font-bold text-white">
+          {badge > 9 ? "9+" : badge}
+        </span>
+      )}
     </Link>
   );
 }
