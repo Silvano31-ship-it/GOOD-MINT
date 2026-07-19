@@ -1,28 +1,19 @@
-// app/cadastro/page.tsx — Tela 4. Cadastro / Escolha de Plano.
-// Sem cartão obrigatório: o cliente entra direto no painel em trial e decide
-// depois (em Configurações → Plano) se quer assinar. Ver app/api/auth/register.
+// app/cadastro/page.tsx — Tela 4. Cadastro.
+// Plano Único: sem escolha de plano (todo mundo entra no mesmo, R$ 49,90/mês)
+// e sem cartão obrigatório — o cliente entra em trial de 3 dias com as
+// funções essenciais e assina depois em Configurações → Plano pra destravar
+// tudo. Ver app/api/auth/register e components/PlanGate.tsx.
 "use client";
 
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { AuthShell, Field } from "@/components/AuthShell";
 import { BrokerEmoji } from "@/components/BrokerEmoji";
 import { Footer } from "@/components/Footer";
-import { PLAN_PRICING, type BillingCycle } from "@/lib/constants";
-import { formatBRL } from "@/lib/format";
-
-const PLAN_OPTIONS = [
-  { code: "mint_start", name: "MINT Start", desc: "30 leads · 15 imóveis" },
-  { code: "mint_pro", name: "MINT Pro", desc: "Leads e imóveis ilimitados" },
-];
 
 function CadastroForm() {
   const router = useRouter();
-  const params = useSearchParams();
-  const initialPlan = params.get("plano") ?? "mint_start";
-  const initialBilling: BillingCycle = params.get("billing") === "yearly" ? "yearly" : "monthly";
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>(initialBilling);
 
   const [form, setForm] = useState({
     fullName: "",
@@ -32,7 +23,6 @@ function CadastroForm() {
     confirmPassword: "",
     creci: "",
     lgpdConsent: false,
-    planCode: initialPlan,
   });
   const [errors, setErrors] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +50,7 @@ function CadastroForm() {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, billingCycle }),
+        body: JSON.stringify(form),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -77,59 +67,22 @@ function CadastroForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <span className="block text-sm font-medium text-gm-900">Escolha seu plano</span>
-          <div className="flex items-center gap-1.5 rounded-full bg-gm-50 p-0.5 text-xs font-medium">
-            <button
-              type="button"
-              onClick={() => setBillingCycle("monthly")}
-              className={`rounded-full px-2.5 py-1 transition ${billingCycle === "monthly" ? "bg-white text-gm-900 shadow-sm" : "text-gm-700/60"}`}
-            >
-              Mensal
-            </button>
-            <button
-              type="button"
-              onClick={() => setBillingCycle("yearly")}
-              className={`rounded-full px-2.5 py-1 transition ${billingCycle === "yearly" ? "bg-white text-gm-900 shadow-sm" : "text-gm-700/60"}`}
-            >
-              Anual (-20%)
-            </button>
-          </div>
+      <div className="rounded-xl border-2 border-gm-500 bg-gm-50 p-4">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-gm-900">👑 Plano Único</span>
+          <span className="text-xl font-bold text-gm-900">
+            R$ 49,90<span className="text-xs font-normal text-gm-700/60">/mês</span>
+          </span>
         </div>
-        <div className="grid grid-cols-1 gap-2">
-          {PLAN_OPTIONS.map((p) => {
-            const cents = billingCycle === "yearly" ? PLAN_PRICING[p.code].yearlyCents : PLAN_PRICING[p.code].monthlyCents;
-            return (
-              <label
-                key={p.code}
-                className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition ${
-                  form.planCode === p.code
-                    ? "border-gm-500 bg-gm-50 ring-1 ring-gm-500"
-                    : "border-gm-200 hover:border-gm-300"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="planCode"
-                    value={p.code}
-                    checked={form.planCode === p.code}
-                    onChange={() => set("planCode", p.code)}
-                    className="accent-gm-500"
-                  />
-                  <span>
-                    <span className="block font-medium text-gm-900">{p.name}</span>
-                    <span className="block text-xs text-gm-700/60">{p.desc}</span>
-                  </span>
-                </span>
-                <span className="font-semibold text-gm-700">
-                  {formatBRL(cents)}/{billingCycle === "yearly" ? "ano" : "mês"}
-                </span>
-              </label>
-            );
-          })}
-        </div>
+        <p className="mt-1 text-xs leading-relaxed text-gm-700/70">
+          <b>Teste grátis de 3 dias</b> com as funções essenciais (Leads, Imóveis, Negociações,
+          Tarefas e Relatório), sem cartão. Assinando, você destrava <b>tudo, ilimitado</b>: IA,
+          Automações, Agenda, Pós-Venda, Disparo WhatsApp e muito mais.
+        </p>
+        <p className="mt-2 rounded-lg bg-white p-2 text-[11px] leading-relaxed text-gm-700/70">
+          🛡️ <b>Garantia de reembolso de 7 dias:</b> assinou e não gostou? Devolvemos 100% em até
+          7 dias após a compra. Após 7 dias, não há reembolso.
+        </p>
       </div>
 
       <Field label="Nome completo" required value={form.fullName} onChange={(e) => set("fullName", e.target.value)} />
@@ -165,7 +118,7 @@ function CadastroForm() {
         disabled={loading}
         className="w-full rounded-lg bg-gm-500 py-2.5 font-semibold text-white transition hover:bg-gm-600 disabled:opacity-60"
       >
-        {loading ? "Criando conta..." : "Criar conta e começar"}
+        {loading ? "Criando conta..." : "Criar conta e começar o teste grátis"}
       </button>
     </form>
   );
@@ -178,7 +131,7 @@ export default function CadastroPage() {
         animated
         emoji={<BrokerEmoji />}
         title="Comece seu teste grátis"
-        subtitle="3 dias grátis, sem cartão de crédito. Escolha um plano e comece agora."
+        subtitle="3 dias grátis com as funções essenciais, sem cartão. Assine o Plano Único quando quiser destravar tudo."
         footer={
           <>
             Já tem conta?{" "}
@@ -188,9 +141,7 @@ export default function CadastroPage() {
           </>
         }
       >
-        <Suspense fallback={<p className="text-sm text-gm-700/60">Carregando...</p>}>
-          <CadastroForm />
-        </Suspense>
+        <CadastroForm />
       </AuthShell>
       <Footer />
     </>
