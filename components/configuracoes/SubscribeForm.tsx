@@ -1,30 +1,28 @@
 // components/configuracoes/SubscribeForm.tsx
-// Formulário de assinatura (escolha de plano + cartão), usado em
-// Configurações → Plano por quem ainda não assinou (fluxo sem cartão
-// obrigatório no cadastro — o cliente decide depois de já estar no painel).
+// Formulário de assinatura do Plano Único (cartão), usado em Configurações →
+// Plano por quem ainda não assinou. Plano e ciclo são fixos (Plano Único,
+// mensal) — o produto tem um plano só; a escolha antiga Start/Pro saiu.
 "use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Field } from "@/components/AuthShell";
-import { PLAN_PRICING, type BillingCycle } from "@/lib/constants";
-import { formatBRL } from "@/lib/format";
+import type { BillingCycle } from "@/lib/constants";
 
-const PLAN_OPTIONS = [
-  { code: "mint_start", name: "MINT Start", desc: "30 leads · 15 imóveis" },
-  { code: "mint_pro", name: "MINT Pro", desc: "Leads e imóveis ilimitados" },
+const BENEFITS = [
+  "Leads e imóveis ilimitados",
+  "IA, Automações e Agenda ilimitadas",
+  "Pós-Venda completo + Portal do Cliente",
+  "Disparo WhatsApp, Metas e Financeiro",
 ];
 
-export function SubscribeForm({
-  currentPlanCode,
-  currentBillingCycle = "monthly",
-}: {
-  currentPlanCode: string;
+// Props legadas mantidas como opcionais pra compatibilidade com quem ainda
+// renderiza <SubscribeForm currentPlanCode=... /> — são ignoradas.
+export function SubscribeForm(_props: {
+  currentPlanCode?: string;
   currentBillingCycle?: BillingCycle;
-}) {
+} = {}) {
   const router = useRouter();
-  const [planCode, setPlanCode] = useState(currentPlanCode);
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>(currentBillingCycle);
   const [form, setForm] = useState({
     holderName: "",
     number: "",
@@ -50,7 +48,7 @@ export function SubscribeForm({
       const res = await fetch("/api/subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, planCode, billingCycle }),
+        body: JSON.stringify({ ...form, planCode: "mint_pro", billingCycle: "monthly" }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -67,59 +65,18 @@ export function SubscribeForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div>
-        <div className="mb-2 flex items-center justify-between">
-          <span className="block text-sm font-medium text-gm-900">Escolha seu plano</span>
-          <div className="flex items-center gap-1.5 rounded-full bg-gm-50 p-0.5 text-xs font-medium">
-            <button
-              type="button"
-              onClick={() => setBillingCycle("monthly")}
-              className={`rounded-full px-2.5 py-1 transition ${billingCycle === "monthly" ? "bg-white text-gm-900 shadow-sm" : "text-gm-700/60"}`}
-            >
-              Mensal
-            </button>
-            <button
-              type="button"
-              onClick={() => setBillingCycle("yearly")}
-              className={`rounded-full px-2.5 py-1 transition ${billingCycle === "yearly" ? "bg-white text-gm-900 shadow-sm" : "text-gm-700/60"}`}
-            >
-              Anual (-20%)
-            </button>
-          </div>
+      <div className="rounded-xl border-2 border-gm-500 bg-gm-50 p-4">
+        <div className="flex items-center justify-between">
+          <span className="font-semibold text-gm-900">👑 Plano Único</span>
+          <span className="text-xl font-bold text-gm-900">
+            R$ 49,90<span className="text-xs font-normal text-gm-700/60">/mês</span>
+          </span>
         </div>
-        <div className="grid grid-cols-1 gap-2">
-          {PLAN_OPTIONS.map((p) => {
-            const cents = billingCycle === "yearly" ? PLAN_PRICING[p.code].yearlyCents : PLAN_PRICING[p.code].monthlyCents;
-            return (
-              <label
-                key={p.code}
-                className={`flex cursor-pointer items-center justify-between rounded-lg border px-3 py-2.5 text-sm transition ${
-                  planCode === p.code
-                    ? "border-gm-500 bg-gm-50 ring-1 ring-gm-500"
-                    : "border-gm-200 hover:border-gm-300"
-                }`}
-              >
-                <span className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="subscribePlanCode"
-                    value={p.code}
-                    checked={planCode === p.code}
-                    onChange={() => setPlanCode(p.code)}
-                    className="accent-gm-500"
-                  />
-                  <span>
-                    <span className="block font-medium text-gm-900">{p.name}</span>
-                    <span className="block text-xs text-gm-700/60">{p.desc}</span>
-                  </span>
-                </span>
-                <span className="font-semibold text-gm-700">
-                  {formatBRL(cents)}/{billingCycle === "yearly" ? "ano" : "mês"}
-                </span>
-              </label>
-            );
-          })}
-        </div>
+        <ul className="mt-2 space-y-1 text-xs text-gm-700/80">
+          {BENEFITS.map((b) => (
+            <li key={b}>✅ {b}</li>
+          ))}
+        </ul>
       </div>
 
       <Field label="Nome no cartão" required value={form.holderName} onChange={(e) => set("holderName", e.target.value)} />
@@ -135,6 +92,12 @@ export function SubscribeForm({
         <Field label="Número" required value={form.addressNumber} onChange={(e) => set("addressNumber", e.target.value)} />
       </div>
 
+      <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-800">
+        🛡️ <b>Garantia de reembolso de 7 dias:</b> se você assinar e não gostar, devolvemos 100% do
+        valor em até 7 dias após a compra. <b>Após 7 dias, não há reembolso</b> — o cancelamento
+        continua livre, valendo até o fim do período já pago.
+      </div>
+
       {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
       <button
@@ -142,7 +105,7 @@ export function SubscribeForm({
         disabled={loading}
         className="w-full rounded-lg bg-gm-500 py-2.5 font-semibold text-white transition hover:bg-gm-600 disabled:opacity-60"
       >
-        {loading ? "Registrando..." : "Assinar agora"}
+        {loading ? "Registrando..." : "Assinar o Plano Único — R$ 49,90/mês"}
       </button>
       <p className="text-center text-xs text-gm-700/50">
         🔒 Seus dados de cartão são tokenizados pelo Asaas. Nunca armazenamos o número do cartão.
@@ -150,3 +113,5 @@ export function SubscribeForm({
     </form>
   );
 }
+
+  
