@@ -69,31 +69,6 @@ export function LoginFooter() {
                 Contato
               </a>
             </nav>
-
-            <div className="flex items-center gap-3">
-              <a
-                href="https://instagram.com/goodmint"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="Instagram"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#F5C94A]/20 bg-[#F5C94A]/[0.08] text-[#F5C94A] transition-colors duration-300 hover:bg-[#F5C94A]/20"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
-                </svg>
-              </a>
-              <a
-                href="https://wa.me/5500000000000"
-                target="_blank"
-                rel="noreferrer"
-                aria-label="WhatsApp"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-[#F5C94A]/20 bg-[#F5C94A]/[0.08] text-[#F5C94A] transition-colors duration-300 hover:bg-[#F5C94A]/20"
-              >
-                <span aria-hidden="true" className="text-base">💬</span>
-              </a>
-            </div>
           </div>
 
           <p className="mt-6 text-center text-xs text-[#B0B8C8]/70">
