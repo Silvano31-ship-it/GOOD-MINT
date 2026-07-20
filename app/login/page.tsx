@@ -198,8 +198,10 @@ export default function LoginPage() {
         </div>
 
         {/* Destaques do produto — funções reais do GOOD MINT, preenchendo o
-            espaço acima do rodapé com prova de valor (sem dados inventados). */}
-        <Reveal className="relative z-10 mx-auto max-w-6xl px-5 pb-16">
+            espaço acima do rodapé com prova de valor (sem dados inventados).
+            Sem Reveal de propósito: conteúdo importante fica sempre visível,
+            mesmo em navegadores internos onde o IntersectionObserver falha. */}
+        <section className="relative z-10 mx-auto max-w-6xl px-5 pb-16">
           <h2 className="mb-6 text-center text-xl font-semibold text-white md:text-left">
             Tudo o que você precisa,{" "}
             <span className="text-[#F5C94A]">num só lugar.</span>
@@ -216,7 +218,7 @@ export default function LoginPage() {
               </div>
             ))}
           </div>
-        </Reveal>
+        </section>
 
         <LoginFooter />
       </main>
