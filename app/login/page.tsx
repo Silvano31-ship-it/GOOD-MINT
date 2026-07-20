@@ -136,6 +136,29 @@ const BADGES = [
   "⏳ Teste grátis de 3 dias",
 ];
 
+const FEATURES = [
+  {
+    icon: "🤝",
+    title: "Pós-venda automático",
+    desc: "Acompanhe cada cliente da proposta à entrega das chaves, com etapas, lembretes e checklist.",
+  },
+  {
+    icon: "🔗",
+    title: "Portal do cliente",
+    desc: "Seu cliente acompanha o andamento por um link exclusivo — sem te ligar a toda hora.",
+  },
+  {
+    icon: "✨",
+    title: "IA de conteúdo",
+    desc: "Gere posts, legendas e imagens pros seus imóveis em segundos, direto no sistema.",
+  },
+  {
+    icon: "⚡",
+    title: "Automações",
+    desc: "Dispare mensagens e follow-ups no momento certo, sem precisar lembrar de tudo.",
+  },
+];
+
 export default function LoginPage() {
   return (
     <>
@@ -173,6 +196,27 @@ export default function LoginPage() {
             </span>
           ))}
         </div>
+
+        {/* Destaques do produto — funções reais do GOOD MINT, preenchendo o
+            espaço acima do rodapé com prova de valor (sem dados inventados). */}
+        <Reveal className="relative z-10 mx-auto max-w-6xl px-5 pb-16">
+          <h2 className="mb-6 text-center text-xl font-semibold text-white md:text-left">
+            Tudo o que você precisa,{" "}
+            <span className="text-[#F5C94A]">num só lugar.</span>
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURES.map((f) => (
+              <div
+                key={f.title}
+                className="gm-night-glass rounded-xl p-5 transition-transform duration-300 hover:-translate-y-1"
+              >
+                <div className="text-2xl" aria-hidden="true">{f.icon}</div>
+                <h3 className="mt-3 font-semibold text-white">{f.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-[#B0B8C8]">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
 
         <LoginFooter />
       </main>
