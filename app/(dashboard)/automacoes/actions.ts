@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { getSession } from "@/lib/session";
+import { runAutomations } from "@/lib/automations";
 
 const VALID_TRIGGERS = new Set(["lead_parado", "lead_novo", "negociacao_parada"]);
 const VALID_ACTIONS = new Set(["enviar_email", "criar_tarefa", "notificacao"]);
@@ -46,4 +47,16 @@ export async function createAutomationV2(formData: FormData) {
     [userId, name, days, legacyAction, message, trigger, stage, actions]
   );
   revalidatePath("/automacoes");
+}
+
+/** Botão "▶ Rodar agora" — executa as automações do corretor logado na hora,
+ * sem esperar o cron diário. Serve pra testar e como gatilho manual caso o
+ * cron do plano falhe. Redireciona com o resultado pra mostrar o aviso. */
+export async function runMyAutomationsNow() {
+  const session = await getSession();
+  if (!session) redirect("/login");
+
+  const { matched, executed } = await runAutomations({ userId: session.userId });
+  revalidatePath("/automacoes");
+  redirect(`/automacoes?rodou=${executed}&achou=${matched}`);
 }
