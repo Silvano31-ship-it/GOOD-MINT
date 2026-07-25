@@ -5,7 +5,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { savePushSubscription, removePushSubscription } from "@/app/(dashboard)/configuracoes/notificacoes/actions";
+import { savePushSubscription, removePushSubscription, sendTestNotification } from "@/app/(dashboard)/configuracoes/notificacoes/actions";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -70,6 +70,21 @@ export function PushSetup({ vapidPublicKey }: { vapidPublicKey: string | null })
     setStatus("idle");
   }
 
+  const [testMsg, setTestMsg] = useState<string | null>(null);
+  async function sendTest() {
+    setTestMsg("Enviando...");
+    try {
+      const { sent } = await sendTestNotification();
+      setTestMsg(
+        sent > 0
+          ? "✅ Teste enviado! Deve chegar em instantes."
+          : "⚠️ Nenhum dispositivo recebeu — verifique se as chaves VAPID estão configuradas."
+      );
+    } catch {
+      setTestMsg("Não foi possível enviar o teste agora.");
+    }
+  }
+
   const iosBlocked = isIOS && !isStandalone;
 
   return (
@@ -105,11 +120,20 @@ export function PushSetup({ vapidPublicKey }: { vapidPublicKey: string | null })
         </button>
       )}
       {status === "on" && (
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-green-700">✅ Notificações ativadas neste dispositivo</span>
-          <button onClick={deactivate} className="text-xs text-gm-700/50 hover:underline">
-            Desativar
-          </button>
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-green-700">✅ Notificações ativadas neste dispositivo</span>
+            <button
+              onClick={sendTest}
+              className="rounded-lg border border-gm-200 px-3 py-1.5 text-xs font-semibold text-gm-700 hover:bg-gm-50"
+            >
+              Enviar teste
+            </button>
+            <button onClick={deactivate} className="text-xs text-gm-700/50 hover:underline">
+              Desativar
+            </button>
+          </div>
+          {testMsg && <p className="text-xs text-gm-700/70">{testMsg}</p>}
         </div>
       )}
 
