@@ -17,6 +17,9 @@ export async function sendChatMessageAction(
   messages: ChatMessage[]
 ): Promise<{ ok: boolean; reply?: string; error?: string }> {
   const userId = await requireUserId();
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return { ok: false, error: "O assistente de IA ainda não foi configurado nesta conta." };
+  }
   const quota = await getAiQuota(userId, "texto");
   if (quota.exceeded) {
     return { ok: false, error: "Você atingiu o limite mensal de textos gerados por IA do seu plano." };
@@ -27,7 +30,7 @@ export async function sendChatMessageAction(
     return { ok: true, reply };
   } catch (err) {
     console.error("Erro no chat de IA:", err);
-    return { ok: false, error: `DEBUG: ${err instanceof Error ? err.message : String(err)}` };
+    return { ok: false, error: "Não foi possível gerar a resposta agora. Tente de novo em instantes." };
   }
 }
 
@@ -48,6 +51,6 @@ export async function generateChatImageAction(
     return { ok: true, url, prompt };
   } catch (err) {
     console.error("Erro ao gerar imagem no chat de IA:", err);
-    return { ok: false, error: `DEBUG: ${err instanceof Error ? err.message : String(err)}` };
+    return { ok: false, error: "Não foi possível gerar a imagem agora. Tente de novo em instantes." };
   }
 }
