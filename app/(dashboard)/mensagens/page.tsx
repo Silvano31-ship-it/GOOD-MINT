@@ -32,7 +32,7 @@ export default async function MensagensPage() {
     <div>
       <PageHeader
         title="Central de Mensagens"
-        subtitle="Caixa unificada — WhatsApp, Instagram, Facebook e TikTok."
+        subtitle="Quando seus canais estiverem conectados, as conversas ficam todas reunidas aqui."
         action={
           <Link href="/configuracoes/integracoes" className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600">
             ⚙ Configurar canais
@@ -41,12 +41,18 @@ export default async function MensagensPage() {
       />
 
       {!hasConnected && (
-        <div className="mb-6 rounded-xl border border-gm-200 bg-gm-50 px-4 py-3 text-sm text-gm-700">
-          📡 Nenhum canal conectado ainda. Conecte seu WhatsApp Business em{" "}
-          <Link href="/configuracoes/integracoes" className="font-semibold text-gm-500 hover:underline">
-            Configurações → Integrações
-          </Link>{" "}
-          para começar a receber mensagens aqui.
+        <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">📡 Recebimento de mensagens: em breve</p>
+          <p className="mt-1 text-amber-800">
+            A caixa unificada (receber mensagens de WhatsApp, Instagram e Facebook
+            aqui) depende da aprovação da API oficial da Meta — ainda em análise.
+            Enquanto isso, você já pode <b>enviar</b> mensagens em massa pelos seus
+            leads em{" "}
+            <Link href="/social/disparo" className="font-semibold underline">
+              Disparo WhatsApp
+            </Link>
+            .
+          </p>
         </div>
       )}
 
