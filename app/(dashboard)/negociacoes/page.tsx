@@ -25,7 +25,13 @@ export default async function NegociacoesPage() {
         title="Negociações"
         subtitle="Acompanhe cada negócio e feche a venda."
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Link
+              href="/negociacoes/foco"
+              className="rounded-lg border border-gm-200 px-4 py-2 text-sm font-semibold text-gm-700 hover:bg-gm-50"
+            >
+              🧘 Modo Foco
+            </Link>
             <Link
               href="/negociacoes/retrospectiva"
               className="rounded-lg border border-gm-200 px-4 py-2 text-sm font-semibold text-gm-700 hover:bg-gm-50"
