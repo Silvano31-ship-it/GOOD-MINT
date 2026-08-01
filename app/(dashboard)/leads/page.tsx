@@ -1,4 +1,5 @@
 // app/(dashboard)/leads/page.tsx — Tela 8. Leads — Funil Kanban.
+import Link from "next/link";
 import { requireActiveAccount } from "@/lib/account-guard";
 import { getLeads, getCounts } from "@/lib/data";
 import { KanbanBoard } from "@/components/leads/KanbanBoard";
@@ -19,7 +20,17 @@ export default async function LeadsPage({
       <PageHeader
         title="Leads"
         subtitle={`${counts.leadsActive}${counts.leadLimit ? ` / ${counts.leadLimit}` : ""} leads ativos · arraste os cards entre as etapas`}
-        action={<NewLeadButton />}
+        action={
+          <div className="flex items-center gap-2">
+            <Link
+              href="/leads/silencio"
+              className="rounded-lg border border-gm-200 px-4 py-2 text-sm font-semibold text-gm-700 hover:bg-gm-50"
+            >
+              🤫 Rastreador
+            </Link>
+            <NewLeadButton />
+          </div>
+        }
       />
 
       {searchParams.limite && (
