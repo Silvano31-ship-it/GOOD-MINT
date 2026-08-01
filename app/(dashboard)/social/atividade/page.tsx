@@ -29,13 +29,19 @@ export default async function SocialAtividadePage() {
 
   return (
     <div>
-      <PageHeader title="Social" subtitle="Conecte seus canais, acompanhe o engajamento e publique." />
+      <PageHeader title="Social" subtitle="Crie conteúdo com IA agora; acompanhe o engajamento quando conectar suas redes." />
       <SocialTabs />
 
-      <div className="mb-4 rounded-lg bg-gm-50 px-3 py-2 text-xs text-gm-700/70">
-        ℹ️ No Instagram, o Meta só informa a <b>contagem</b> de curtidas, sem a
-        lista de quem curtiu — limitação da própria plataforma, não é um
-        defeito. No Facebook, a lista de quem reagiu aparece quando disponível.
+      <div className="mb-4 rounded-lg border border-gm-100 bg-gm-50 px-4 py-3 text-sm text-gm-700">
+        <p>
+          <b className="text-green-700">✅ Já funciona:</b> criar posts, legendas e
+          imagens com IA na aba <b>Nova publicação</b>.
+        </p>
+        <p className="mt-1">
+          <b className="text-amber-700">⏳ Em breve:</b> conectar Instagram e Facebook
+          pra ver o engajamento (mensagens, comentários, curtidas) e publicar direto —
+          depende da aprovação da API da Meta, ainda em análise.
+        </p>
       </div>
 
       {activity.length === 0 ? (
