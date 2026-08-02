@@ -11,7 +11,18 @@ const SHEETS = [
 export default function PlanilhasHome() {
   return (
     <div>
-      <PageHeader title="Planilhas" subtitle="Visão em tabela — leitura rápida, sem gráficos ou painéis complexos." />
+      <PageHeader
+        title="Planilhas"
+        subtitle="Visão em tabela — leitura rápida, sem gráficos ou painéis complexos."
+        action={
+          <Link
+            href="/planilhas/livre"
+            className="rounded-lg bg-gm-500 px-4 py-2 text-sm font-semibold text-white hover:bg-gm-600"
+          >
+            ✅ EXCEL GOOD
+          </Link>
+        }
+      />
       <div className="grid gap-4 sm:grid-cols-3">
         {SHEETS.map((s) => (
           <Link key={s.href} href={s.href} className="gm-card p-5 transition hover:-translate-y-0.5">
