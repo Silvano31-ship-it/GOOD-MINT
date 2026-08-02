@@ -124,6 +124,12 @@ export async function POST(req: Request) {
       [customer.id, asaasSub.id, last4, asaasSub.creditCard?.creditCardBrand ?? null, subscription.id]
     );
 
+    // Cartão válido registrado → libera o acesso na hora, sem esperar o webhook
+    // (que só chega quando a cobrança confirma, no fim do trial). Se a cobrança
+    // futura falhar, o webhook PAYMENT_OVERDUE volta a conta pra 'suspended'.
+    await db.query(`UPDATE subscriptions SET status='active' WHERE id=$1`, [subscription.id]);
+    await db.query(`UPDATE users SET account_status='active' WHERE id=$1`, [user.id]);
+
     return NextResponse.json({ ok: true });
   } catch (err: any) {
     console.error("Erro ao registrar cartão no Asaas:", err);
