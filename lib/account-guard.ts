@@ -50,10 +50,22 @@ export async function getCurrentUser(): Promise<CurrentUser | null> {
   return rows[0] ?? null;
 }
 
+/** True quando o teste grátis já acabou e a conta ainda não virou paga. */
+export function isTrialExpired(user: CurrentUser): boolean {
+  if (user.ai_unlimited) return false;
+  if (user.account_status !== "trialing" || !user.trial_ends_at) return false;
+  return new Date(user.trial_ends_at).getTime() <= Date.now();
+}
+
 export async function requireActiveAccount(): Promise<CurrentUser> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  if (user.account_status === "suspended" && !user.ai_unlimited) redirect("/conta-suspensa");
+  if (user.ai_unlimited) return user;
+  // Conta suspensa (falha de pagamento) OU teste grátis expirado sem assinatura
+  // → trava tudo e manda pra tela de reativação/assinatura.
+  if (user.account_status === "suspended" || isTrialExpired(user)) {
+    redirect("/conta-suspensa");
+  }
   return user;
 }
 
